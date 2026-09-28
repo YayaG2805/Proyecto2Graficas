@@ -1,7 +1,5 @@
 use raylib::color::Color as RColor;
 
-use crate::color::Color;
-
 // Framebuffer: un arreglo de colores (uno por pixel) sobre el que dibujamos
 // manualmente. Cada frame lo convertimos a bytes RGBA y lo subimos como
 // textura a raylib (igual que en el Proyecto 1), porque llamar draw_pixel
@@ -22,12 +20,10 @@ impl Framebuffer {
         }
     }
 
-    pub fn set_pixel(&mut self, x: i32, y: i32, color: Color) {
-        if x < 0 || y < 0 || x >= self.width || y >= self.height {
-            return;
-        }
-        let index = (y * self.width + x) as usize;
-        self.pixels[index] = color.to_raylib();
+    // Acceso directo a todos los pixeles (fila por fila), para que el render
+    // en paralelo pueda repartir filas entre hilos.
+    pub fn pixels_mut(&mut self) -> &mut [RColor] {
+        &mut self.pixels
     }
 
     // Convierte el buffer a bytes RGBA, el formato que espera update_texture.
