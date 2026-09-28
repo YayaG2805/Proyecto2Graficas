@@ -20,6 +20,10 @@ impl Framebuffer {
         }
     }
 
+    pub fn pixels(&self) -> &[RColor] {
+        &self.pixels
+    }
+
     // Acceso directo a todos los pixeles (fila por fila), para que el render
     // en paralelo pueda repartir filas entre hilos.
     pub fn pixels_mut(&mut self) -> &mut [RColor] {

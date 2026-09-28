@@ -135,17 +135,22 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> 
     true
 }
 
+// Guarda el contenido del framebuffer como PNG (usando Image de raylib, que
+// ya usabamos en clase para exportar la textura del tablero).
+fn save_screenshot(framebuffer: &Framebuffer, path: &str) {
+    let mut image = Image::gen_image_color(framebuffer.width, framebuffer.height, RColor::BLACK);
+    for (i, color) in framebuffer.pixels().iter().enumerate() {
+        let x = i as i32 % framebuffer.width;
+        let y = i as i32 / framebuffer.width;
+        image.draw_pixel(x, y, *color);
+    }
+    image.export_image(path);
+    println!("Captura guardada en {}", path);
+}
+
 fn main() {
     let window_width = 800;
     let window_height = 600;
-
-    let (mut rl, thread) = raylib::init()
-        .size(window_width, window_height)
-        .title("Proyecto 2 - Raytracing: Santuario flotante")
-        .build();
-    rl.set_target_fps(60);
-
-    let mut framebuffer = Framebuffer::new(window_width, window_height);
 
     let objects = scene::build_scene();
     println!("Escena: {} cajas", objects.len());
@@ -160,6 +165,30 @@ fn main() {
         std::f32::consts::PI / 3.0,
     );
 
+    let mut framebuffer = Framebuffer::new(window_width, window_height);
+
+    // Modo captura sin ventana:
+    //   cargo run -- --screenshot archivo.png [yaw pitch distance]
+    // Renderiza un solo cuadro, lo guarda y termina.
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 3 && args[1] == "--screenshot" {
+        if args.len() >= 6 {
+            let parse = |s: &String| s.parse::<f32>().expect("yaw/pitch/distance deben ser numeros");
+            camera = OrbitCamera::new(camera.target, parse(&args[3]), parse(&args[4]), parse(&args[5]), camera.fov);
+        }
+        let start = std::time::Instant::now();
+        render(&mut framebuffer, &objects, &light, &camera);
+        println!("render: {:.0} ms", start.elapsed().as_secs_f32() * 1000.0);
+        save_screenshot(&framebuffer, &args[2]);
+        return;
+    }
+
+    let (mut rl, thread) = raylib::init()
+        .size(window_width, window_height)
+        .title("Proyecto 2 - Raytracing: Santuario flotante")
+        .build();
+    rl.set_target_fps(60);
+
     // Textura de pantalla donde subimos el framebuffer cada vez que cambia.
     let image = Image::gen_image_color(window_width, window_height, RColor::BLACK);
     let mut screen_texture = rl
@@ -168,6 +197,7 @@ fn main() {
 
     let mut needs_render = true;
     let mut render_ms = 0.0;
+    let mut screenshot_count = 0;
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time();
@@ -184,6 +214,13 @@ fn main() {
                 .update_texture(&framebuffer.to_rgba_bytes())
                 .expect("no se pudo actualizar la textura del framebuffer");
             needs_render = false;
+        }
+
+        // F12: guardar captura del render actual (para el README).
+        if rl.is_key_pressed(KeyboardKey::KEY_F12) {
+            std::fs::create_dir_all("screenshots").expect("no se pudo crear la carpeta screenshots");
+            screenshot_count += 1;
+            save_screenshot(&framebuffer, &format!("screenshots/captura_{}.png", screenshot_count));
         }
 
         let mut d = rl.begin_drawing(&thread);
