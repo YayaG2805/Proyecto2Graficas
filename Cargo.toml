@@ -1,0 +1,13 @@
+[package]
+name = "proyecto2_raytracer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nalgebra-glm = "0.21.0"
+raylib = { version = "6.0.0", features = ["SUPPORT_IMAGE_GENERATION"] }
+
+# El raytracer hace millones de operaciones por frame: en modo debug es
+# demasiado lento para mover la camara, asi que optimizamos aun en `cargo run`.
+[profile.dev]
+opt-level = 3
