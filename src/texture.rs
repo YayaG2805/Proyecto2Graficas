@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use raylib::color::Color as RColor;
 use raylib::prelude::*;
@@ -9,7 +9,7 @@ use crate::color::Color;
 pub struct Texture {
     width: i32,
     height: i32,
-    pixels: Rc<Vec<Color>>,
+    pixels: Arc<Vec<Color>>,
 }
 
 impl Texture {
@@ -25,7 +25,7 @@ impl Texture {
             }
         }
 
-        Texture { width, height, pixels: Rc::new(pixels) }
+        Texture { width, height, pixels: Arc::new(pixels) }
     }
 
     pub fn from_file(path: &str) -> Self {
