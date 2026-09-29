@@ -68,7 +68,10 @@ pub fn build_scene() -> Vec<Cube> {
     sky_shrine(&mut objects, &p);
     under_crystals(&mut objects, &p);
     props(&mut objects, &p);
+    gate(&mut objects, &p);
+    ruined_walls(&mut objects, &p);
     trees(&mut objects, &p);
+    vegetation(&mut objects, &p);
 
     objects
 }
@@ -318,6 +321,47 @@ fn props(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (3.6, 1.0, -4.6), (3.7, 3.4, -4.5), &p.wood);
     add(o, (3.6, 1.0, -3.3), (3.7, 3.4, -3.2), &p.wood);
     add(o, (3.3, 2.6, -4.7), (3.9, 2.7, -3.1), &p.wood);
+}
+
+// Portal de madera que marca la entrada al puente (enmarca el camino).
+fn gate(o: &mut Vec<Cube>, p: &Palette) {
+    add(o, (6.5, 0.0, -0.35), (6.7, 2.2, -0.15), &p.wood); // poste
+    add(o, (6.5, 0.0, 1.35), (6.7, 2.2, 1.55), &p.wood); // poste
+    add(o, (6.4, 2.2, -0.6), (6.8, 2.4, 1.8), &p.wood); // viga superior
+    add(o, (6.5, 1.8, -0.15), (6.7, 1.9, 1.35), &p.wood); // viga inferior
+    add(o, (6.47, 1.9, 0.45), (6.73, 2.2, 0.75), &p.metal); // placa
+}
+
+// Restos de la muralla que rodeaba el santuario, en el borde trasero.
+fn ruined_walls(o: &mut Vec<Cube>, p: &Palette) {
+    add(o, (-6.8, 0.0, -5.9), (-5.0, 1.2, -5.5), &p.stone);
+    add(o, (-6.8, 1.2, -5.9), (-6.0, 1.5, -5.5), &p.stone);
+    add(o, (-4.6, 0.0, -5.9), (-4.0, 0.6, -5.5), &p.stone);
+    add(o, (4.5, 0.0, -5.9), (6.8, 1.0, -5.5), &p.stone);
+    add(o, (5.8, 1.0, -5.9), (6.8, 1.4, -5.5), &p.stone);
+    add(o, (6.4, 0.0, -5.5), (6.8, 0.8, -4.2), &p.stone); // esquina
+}
+
+// Arbustos bajos y enredaderas colgando de los bordes de la isla.
+fn vegetation(o: &mut Vec<Cube>, p: &Palette) {
+    let bushes = [
+        ((-6.2, 0.0, -1.0), (-5.6, 0.5, -0.4)),
+        ((-6.6, 0.0, 0.2), (-6.1, 0.35, 0.7)),
+        ((1.2, 0.0, 4.5), (1.9, 0.45, 5.2)),
+        ((-0.5, 0.0, 5.1), (0.0, 0.3, 5.5)),
+        ((10.3, 0.0, 1.3), (10.8, 0.4, 1.8)),
+    ];
+    for (min, max) in bushes {
+        add(o, min, max, &p.grass);
+    }
+
+    // Enredaderas: tiras delgadas bajo el borde del pasto.
+    for (x, length) in [(-5.0, 1.4), (-2.5, 0.9), (0.5, 1.7), (3.2, 1.1)] {
+        add(o, (x, -0.4 - length, 5.85), (x + 0.12, -0.4, 5.97), &p.grass);
+    }
+    for (z, length) in [(-4.0, 1.2), (4.5, 1.6)] {
+        add(o, (-6.97, -0.4 - length, z), (-6.85, -0.4, z + 0.12), &p.grass);
+    }
 }
 
 // Arboles voxel: tronco de madera y copa de bloques escalonados.
