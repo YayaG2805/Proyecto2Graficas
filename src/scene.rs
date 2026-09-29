@@ -2,7 +2,8 @@ use nalgebra_glm::Vec3;
 
 use crate::color::Color;
 use crate::cube::Cube;
-use crate::ray_intersect::Material;
+use crate::group::Group;
+use crate::ray_intersect::{Intersect, Material, RayIntersect};
 
 // ============================================================
 // SANTUARIO FLOTANTE
@@ -54,26 +55,82 @@ fn add(objects: &mut Vec<Cube>, min: (f32, f32, f32), max: (f32, f32, f32), mate
     ));
 }
 
-pub fn build_scene() -> Vec<Cube> {
+// La escena completa: una lista de grupos, cada uno con su caja envolvente.
+pub struct Scene {
+    pub groups: Vec<Group>,
+}
+
+impl Scene {
+    pub fn cube_count(&self) -> usize {
+        self.groups.iter().map(|g| g.cubes.len()).sum()
+    }
+
+    // Impacto mas cercano del rayo contra toda la escena.
+    pub fn closest_hit(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
+        let mut zbuffer = f32::INFINITY;
+        let mut closest: Option<&Cube> = None;
+
+        for group in &self.groups {
+            // Si el rayo no toca la envolvente, o la toca mas lejos que el
+            // impacto que ya tenemos, ninguna pieza del grupo puede ganar.
+            match group.entry_distance(ray_origin, ray_direction) {
+                Some(entry) if entry < zbuffer => {}
+                _ => continue,
+            }
+
+            for cube in &group.cubes {
+                if let Some(distance) = cube.hit_distance(ray_origin, ray_direction) {
+                    if distance < zbuffer {
+                        zbuffer = distance;
+                        closest = Some(cube);
+                    }
+                }
+            }
+        }
+
+        // Intersect completo (punto, normal, UV, material) solo para la ganadora.
+        match closest {
+            Some(cube) => cube.ray_intersect(ray_origin, ray_direction),
+            None => Intersect::empty(),
+        }
+    }
+}
+
+// Cada funcion de construccion arma una parte del diorama; cada parte se
+// convierte en un grupo con su propia caja envolvente.
+type PartBuilder = fn(&mut Vec<Cube>, &Palette);
+
+pub fn build_scene() -> Scene {
     let p = Palette::new();
-    let mut objects = Vec::new();
 
-    floating_island(&mut objects, &p);
-    pond(&mut objects, &p);
-    waterfall(&mut objects, &p);
-    temple(&mut objects, &p);
-    temple_details(&mut objects, &p);
-    altar_and_crystal(&mut objects, &p);
-    bridge_and_satellite(&mut objects, &p);
-    sky_shrine(&mut objects, &p);
-    under_crystals(&mut objects, &p);
-    props(&mut objects, &p);
-    gate(&mut objects, &p);
-    ruined_walls(&mut objects, &p);
-    trees(&mut objects, &p);
-    vegetation(&mut objects, &p);
+    let parts: [PartBuilder; 15] = [
+        floating_island,
+        floating_rocks,
+        pond,
+        waterfall,
+        temple,
+        temple_details,
+        altar_and_crystal,
+        bridge_and_satellite,
+        sky_shrine,
+        under_crystals,
+        props,
+        gate,
+        ruined_walls,
+        trees,
+        vegetation,
+    ];
 
-    objects
+    let groups = parts
+        .iter()
+        .map(|build_part| {
+            let mut cubes = Vec::new();
+            build_part(&mut cubes, &p);
+            Group::new(cubes)
+        })
+        .collect();
+
+    Scene { groups }
 }
 
 // Isla principal: capas de roca cada vez mas pequenas hacia abajo (piramide
@@ -97,8 +154,10 @@ fn floating_island(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (3.6, -3.3, -4.0), (4.2, -2.5, -3.4), &p.stone);
     add(o, (-4.6, -3.0, 2.8), (-4.0, -2.5, 3.4), &p.stone);
     add(o, (1.8, -4.2, 2.2), (2.4, -3.5, 2.8), &p.stone);
+}
 
-    // Rocas pequenas flotando alrededor (dan escala y profundidad).
+// Rocas pequenas flotando alrededor (dan escala y profundidad).
+fn floating_rocks(o: &mut Vec<Cube>, p: &Palette) {
     o.push(Cube::new(Vec3::new(-9.5, -0.8, 3.5), 0.8, p.stone.clone()));
     o.push(Cube::new(Vec3::new(-8.8, 1.2, -5.0), 0.5, p.stone.clone()));
     o.push(Cube::new(Vec3::new(8.2, 2.5, -5.2), 0.6, p.stone.clone()));

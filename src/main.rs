@@ -2,6 +2,7 @@ mod camera;
 mod color;
 mod cube;
 mod framebuffer;
+mod group;
 mod light;
 mod ray_intersect;
 mod scene;
@@ -13,10 +14,9 @@ use raylib::prelude::*;
 
 use camera::OrbitCamera;
 use color::Color;
-use cube::Cube;
 use framebuffer::Framebuffer;
 use light::Light;
-use ray_intersect::{Intersect, RayIntersect};
+use scene::Scene;
 
 const SKY_COLOR: Color = Color { r: 4.0, g: 12.0, b: 36.0 };
 
@@ -29,26 +29,8 @@ const ORBIT_SPEED: f32 = 1.5; // radianes/s
 const ZOOM_SPEED: f32 = 8.0; // unidades/s
 const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
 
-fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Cube], light: &Light) -> Color {
-    // 1) Buscar la caja mas cercana usando solo distancias (barato).
-    let mut zbuffer = f32::INFINITY;
-    let mut closest: Option<&Cube> = None;
-
-    for object in objects {
-        if let Some(distance) = object.hit_distance(ray_origin, ray_direction) {
-            if distance < zbuffer {
-                zbuffer = distance;
-                closest = Some(object);
-            }
-        }
-    }
-
-    // 2) Calcular el Intersect completo (punto, normal, UV, material) solo
-    //    para la ganadora.
-    let intersect = match closest {
-        Some(object) => object.ray_intersect(ray_origin, ray_direction),
-        None => Intersect::empty(),
-    };
+fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, light: &Light) -> Color {
+    let intersect = scene.closest_hit(ray_origin, ray_direction);
 
     if !intersect.is_intersecting {
         return SKY_COLOR;
@@ -61,7 +43,7 @@ fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Cube], light: &L
     diffuse_color * light.color * (diffuse_intensity * light.intensity) + diffuse_color * AMBIENT
 }
 
-fn render(framebuffer: &mut Framebuffer, objects: &[Cube], light: &Light, camera: &OrbitCamera) {
+fn render(framebuffer: &mut Framebuffer, scene: &Scene, light: &Light, camera: &OrbitCamera) {
     let width = framebuffer.width as f32;
     let height = framebuffer.height as f32;
     let aspect_ratio = width / height;
@@ -84,7 +66,7 @@ fn render(framebuffer: &mut Framebuffer, objects: &[Cube], light: &Light, camera
     }
 
     // thread::scope garantiza que todos los hilos terminan antes de salir,
-    // por eso pueden usar referencias prestadas (objects, light, basis).
+    // por eso pueden usar referencias prestadas (scene, light, basis).
     std::thread::scope(|scope| {
         for rows in rows_per_thread {
             let basis = &basis;
@@ -97,7 +79,7 @@ fn render(framebuffer: &mut Framebuffer, objects: &[Cube], light: &Light, camera
                         let screen_y = -(2.0 * y as f32) / height + 1.0;
 
                         let ray_direction = basis.ray_direction(screen_x, screen_y);
-                        let pixel_color = cast_ray(&basis.eye, &ray_direction, objects, light);
+                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene, light);
 
                         *pixel = pixel_color.to_raylib();
                     }
@@ -161,8 +143,8 @@ fn main() {
     let window_width = 800;
     let window_height = 600;
 
-    let objects = scene::build_scene();
-    println!("Escena: {} cajas", objects.len());
+    let scene = scene::build_scene();
+    println!("Escena: {} cajas en {} grupos", scene.cube_count(), scene.groups.len());
 
     let light = Light::new(Vec3::new(-8.0, 12.0, 6.0), 1.0, Color::new(255.0, 255.0, 255.0));
 
@@ -186,7 +168,7 @@ fn main() {
             camera = OrbitCamera::new(camera.target, parse(&args[3]), parse(&args[4]), parse(&args[5]), camera.fov);
         }
         let start = std::time::Instant::now();
-        render(&mut framebuffer, &objects, &light, &camera);
+        render(&mut framebuffer, &scene, &light, &camera);
         println!("render: {:.0} ms", start.elapsed().as_secs_f32() * 1000.0);
         save_screenshot(&framebuffer, &args[2]);
         return;
@@ -217,7 +199,7 @@ fn main() {
 
         if needs_render {
             let start = std::time::Instant::now();
-            render(&mut framebuffer, &objects, &light, &camera);
+            render(&mut framebuffer, &scene, &light, &camera);
             render_ms = start.elapsed().as_secs_f32() * 1000.0;
             screen_texture
                 .update_texture(&framebuffer.to_rgba_bytes())
