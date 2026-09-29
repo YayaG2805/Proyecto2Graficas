@@ -65,6 +65,8 @@ pub fn build_scene() -> Vec<Cube> {
     temple_details(&mut objects, &p);
     altar_and_crystal(&mut objects, &p);
     bridge_and_satellite(&mut objects, &p);
+    sky_shrine(&mut objects, &p);
+    under_crystals(&mut objects, &p);
     props(&mut objects, &p);
     trees(&mut objects, &p);
 
@@ -252,6 +254,47 @@ fn bridge_and_satellite(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (12.1, 0.0, 0.9), (12.45, 1.2, 1.25), &p.glass);
     add(o, (12.5, 0.0, 1.3), (12.75, 0.7, 1.55), &p.glass);
     add(o, (11.8, 0.0, 1.4), (12.0, 0.5, 1.6), &p.glass);
+}
+
+// Santuario alto: escalones de piedra flotando en espiral desde la terraza
+// hasta una isla pequena mas alta, con un obelisco de cristal. Da altura a la
+// composicion y un segundo punto de interes al fondo.
+fn sky_shrine(o: &mut Vec<Cube>, p: &Palette) {
+    // Escalones flotantes en curva: (x, y superior, z), subiendo 0.6 cada uno.
+    let steps = [
+        (-4.6, 1.4, -5.8),
+        (-5.4, 2.0, -6.3),
+        (-6.1, 2.6, -6.9),
+        (-6.6, 3.2, -7.6),
+        (-6.9, 3.8, -8.3),
+        (-7.0, 4.4, -9.0),
+        (-6.6, 5.0, -9.6),
+    ];
+    for (x, top, z) in steps {
+        add(o, (x - 0.4, top - 0.25, z - 0.4), (x + 0.4, top, z + 0.4), &p.stone);
+    }
+
+    // Isla alta detras del templo: pasto arriba y roca escalonada debajo.
+    add(o, (-6.0, 5.2, -10.8), (-3.0, 5.6, -8.2), &p.grass);
+    add(o, (-5.7, 4.4, -10.5), (-3.3, 5.2, -8.5), &p.stone);
+    add(o, (-5.0, 3.6, -10.0), (-3.8, 4.4, -9.0), &p.stone);
+    add(o, (-4.6, 3.0, -9.7), (-4.2, 3.6, -9.3), &p.stone);
+
+    // Obelisco: pedestal de piedra, cristal alto y remate de metal.
+    add(o, (-4.9, 5.6, -9.9), (-4.1, 6.0, -9.1), &p.stone);
+    add(o, (-4.75, 6.0, -9.75), (-4.25, 7.5, -9.25), &p.glass);
+    add(o, (-4.8, 7.5, -9.8), (-4.2, 7.6, -9.2), &p.metal);
+
+    // Arbusto al lado del obelisco.
+    add(o, (-3.7, 5.6, -8.9), (-3.2, 6.0, -8.4), &p.grass);
+}
+
+// Cristales creciendo hacia abajo bajo la isla principal.
+fn under_crystals(o: &mut Vec<Cube>, p: &Palette) {
+    add(o, (-3.0, -4.6, -2.6), (-2.6, -3.5, -2.2), &p.glass);
+    add(o, (2.2, -4.2, -2.4), (2.5, -3.5, -2.1), &p.glass);
+    add(o, (-1.2, -5.2, 2.3), (-0.8, -4.5, 2.7), &p.glass);
+    add(o, (0.6, -6.4, 0.0), (0.9, -5.6, 0.3), &p.glass);
 }
 
 // Detalles del patio: camino de losas, cajas de madera y un andamio junto a
