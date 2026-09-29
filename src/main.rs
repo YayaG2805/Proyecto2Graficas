@@ -30,16 +30,25 @@ const ZOOM_SPEED: f32 = 8.0; // unidades/s
 const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
 
 fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, objects: &[Cube], light: &Light) -> Color {
-    let mut intersect = Intersect::empty();
+    // 1) Buscar la caja mas cercana usando solo distancias (barato).
     let mut zbuffer = f32::INFINITY;
+    let mut closest: Option<&Cube> = None;
 
     for object in objects {
-        let tmp = object.ray_intersect(ray_origin, ray_direction);
-        if tmp.is_intersecting && tmp.distance < zbuffer {
-            zbuffer = tmp.distance;
-            intersect = tmp;
+        if let Some(distance) = object.hit_distance(ray_origin, ray_direction) {
+            if distance < zbuffer {
+                zbuffer = distance;
+                closest = Some(object);
+            }
         }
     }
+
+    // 2) Calcular el Intersect completo (punto, normal, UV, material) solo
+    //    para la ganadora.
+    let intersect = match closest {
+        Some(object) => object.ray_intersect(ray_origin, ray_direction),
+        None => Intersect::empty(),
+    };
 
     if !intersect.is_intersecting {
         return SKY_COLOR;

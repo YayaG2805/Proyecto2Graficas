@@ -26,34 +26,53 @@ impl Cube {
     }
 }
 
+// Metodo slab: intersecta el rayo con los tres pares de planos alineados a
+// los ejes que forman la caja. Devuelve (t_entrada, t_salida), o None si el
+// rayo no toca la caja o la caja queda completamente detras del origen.
+// Se usa tanto para las cajas del diorama como para las cajas envolventes de
+// los grupos.
+pub fn slab_intersect(min: &Vec3, max: &Vec3, ray_origin: &Vec3, ray_direction: &Vec3) -> Option<(f32, f32)> {
+    let inv_dir = Vec3::new(1.0 / ray_direction.x, 1.0 / ray_direction.y, 1.0 / ray_direction.z);
+
+    let mut t1 = (min.x - ray_origin.x) * inv_dir.x;
+    let mut t2 = (max.x - ray_origin.x) * inv_dir.x;
+    let mut tmin = t1.min(t2);
+    let mut tmax = t1.max(t2);
+
+    t1 = (min.y - ray_origin.y) * inv_dir.y;
+    t2 = (max.y - ray_origin.y) * inv_dir.y;
+    tmin = tmin.max(t1.min(t2));
+    tmax = tmax.min(t1.max(t2));
+
+    t1 = (min.z - ray_origin.z) * inv_dir.z;
+    t2 = (max.z - ray_origin.z) * inv_dir.z;
+    tmin = tmin.max(t1.min(t2));
+    tmax = tmax.min(t1.max(t2));
+
+    if tmax < 0.0 || tmin > tmax {
+        return None;
+    }
+    Some((tmin, tmax))
+}
+
+impl Cube {
+    // Solo la distancia al impacto (sin normal, UV ni material). Es la
+    // version barata que usamos para buscar la caja mas cercana; el
+    // Intersect completo se calcula despues, una sola vez, para la ganadora.
+    pub fn hit_distance(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Option<f32> {
+        let (tmin, tmax) = slab_intersect(&self.min, &self.max, ray_origin, ray_direction)?;
+        // Si el origen esta dentro de la caja, tmin es negativo: el impacto
+        // visible es la salida (tmax).
+        Some(if tmin > 0.0 { tmin } else { tmax })
+    }
+}
+
 impl RayIntersect for Cube {
     fn ray_intersect(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
-        // Slab method: intersect the ray against each pair of axis-aligned planes.
-        let inv_dir = Vec3::new(1.0 / ray_direction.x, 1.0 / ray_direction.y, 1.0 / ray_direction.z);
-
-        let mut t1 = (self.min.x - ray_origin.x) * inv_dir.x;
-        let mut t2 = (self.max.x - ray_origin.x) * inv_dir.x;
-        let mut tmin = t1.min(t2);
-        let mut tmax = t1.max(t2);
-
-        t1 = (self.min.y - ray_origin.y) * inv_dir.y;
-        t2 = (self.max.y - ray_origin.y) * inv_dir.y;
-        tmin = tmin.max(t1.min(t2));
-        tmax = tmax.min(t1.max(t2));
-
-        t1 = (self.min.z - ray_origin.z) * inv_dir.z;
-        t2 = (self.max.z - ray_origin.z) * inv_dir.z;
-        tmin = tmin.max(t1.min(t2));
-        tmax = tmax.min(t1.max(t2));
-
-        if tmax < 0.0 || tmin > tmax {
-            return Intersect::empty();
-        }
-
-        let distance = if tmin > 0.0 { tmin } else { tmax };
-        if distance < 0.0 {
-            return Intersect::empty();
-        }
+        let distance = match self.hit_distance(ray_origin, ray_direction) {
+            Some(distance) => distance,
+            None => return Intersect::empty(),
+        };
 
         let point = ray_origin + ray_direction * distance;
         let size = self.max - self.min;
