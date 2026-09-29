@@ -62,6 +62,7 @@ pub fn build_scene() -> Vec<Cube> {
     pond(&mut objects, &p);
     waterfall(&mut objects, &p);
     temple(&mut objects, &p);
+    temple_details(&mut objects, &p);
     altar_and_crystal(&mut objects, &p);
     bridge_and_satellite(&mut objects, &p);
     props(&mut objects, &p);
@@ -162,6 +163,40 @@ fn temple(o: &mut Vec<Cube>, p: &Palette) {
     // Trozos caidos de la columna rota, en el pasto junto al templo.
     add(o, (4.4, 0.0, -3.2), (5.6, 0.5, -2.6), &p.stone);
     add(o, (4.9, 0.0, -4.4), (5.4, 0.5, -3.9), &p.stone);
+}
+
+// Detalles que dan vida al templo: estatuas guardianas a los lados de la
+// escalinata, braseros en la terraza y una campana colgando del dintel.
+fn temple_details(o: &mut Vec<Cube>, p: &Palette) {
+    // Estatuas: la de la izquierda sostiene la lanza con la mano izquierda,
+    // la de la derecha con la derecha (simetria en espejo).
+    guardian_statue(o, p, -2.4, 0.1, -1.0);
+    guardian_statue(o, p, 2.4, 0.1, 1.0);
+
+    // Braseros en las esquinas delanteras de la terraza.
+    for x in [-3.6, 3.6] {
+        let z = -0.8;
+        add(o, (x - 0.08, 1.0, z - 0.08), (x + 0.08, 1.8, z + 0.08), &p.metal);
+        add(o, (x - 0.25, 1.8, z - 0.25), (x + 0.25, 1.95, z + 0.25), &p.metal);
+    }
+
+    // Campana colgando del dintel lateral, entre las columnas izquierdas.
+    add(o, (-2.63, 4.1, -2.78), (-2.57, 4.55, -2.72), &p.wood); // cuerda
+    add(o, (-2.85, 3.6, -3.0), (-2.35, 4.1, -2.5), &p.metal); // cuerpo
+    add(o, (-2.92, 3.5, -3.07), (-2.28, 3.6, -2.43), &p.metal); // boca
+}
+
+// Estatua voxel: pedestal, cuerpo, hombros, cabeza y una lanza de metal.
+// `side` (-1 o 1) indica hacia que lado queda la lanza.
+fn guardian_statue(o: &mut Vec<Cube>, p: &Palette, x: f32, z: f32, side: f32) {
+    add(o, (x - 0.4, 0.0, z - 0.4), (x + 0.4, 0.4, z + 0.4), &p.stone); // pedestal
+    add(o, (x - 0.25, 0.4, z - 0.2), (x + 0.25, 1.2, z + 0.2), &p.stone); // cuerpo
+    add(o, (x - 0.38, 0.85, z - 0.12), (x + 0.38, 1.1, z + 0.12), &p.stone); // hombros
+    add(o, (x - 0.17, 1.2, z - 0.17), (x + 0.17, 1.52, z + 0.17), &p.stone); // cabeza
+
+    let spear_x = x + side * 0.42;
+    add(o, (spear_x - 0.04, 0.4, z - 0.04), (spear_x + 0.04, 1.9, z + 0.04), &p.metal); // asta
+    add(o, (spear_x - 0.08, 1.9, z - 0.03), (spear_x + 0.08, 2.1, z + 0.03), &p.metal); // punta
 }
 
 // Una columna: basa, fuste y capitel de metal (si esta completa).
