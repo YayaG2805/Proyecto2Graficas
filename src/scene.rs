@@ -60,6 +60,7 @@ pub fn build_scene() -> Vec<Cube> {
 
     floating_island(&mut objects, &p);
     pond(&mut objects, &p);
+    waterfall(&mut objects, &p);
     temple(&mut objects, &p);
     altar_and_crystal(&mut objects, &p);
     bridge_and_satellite(&mut objects, &p);
@@ -102,12 +103,31 @@ fn floating_island(o: &mut Vec<Cube>, p: &Palette) {
 fn pond(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-5.2, 0.0, 4.4), (-1.3, 0.6, 4.7), &p.stone); // borde frente
     add(o, (-5.2, 0.0, 1.3), (-1.3, 0.6, 1.6), &p.stone); // borde fondo
-    add(o, (-5.2, 0.0, 1.6), (-4.9, 0.6, 4.4), &p.stone); // borde izq
+    // Borde izquierdo partido en dos: por el hueco sale el canal de la cascada.
+    add(o, (-5.2, 0.0, 1.6), (-4.9, 0.6, 2.7), &p.stone);
+    add(o, (-5.2, 0.0, 3.3), (-4.9, 0.6, 4.4), &p.stone);
     add(o, (-1.6, 0.0, 1.6), (-1.3, 0.6, 4.4), &p.stone); // borde der
     add(o, (-4.9, 0.0, 1.6), (-1.6, 0.05, 4.4), &p.stone); // fondo
     add(o, (-4.9, 0.05, 1.6), (-1.6, 0.45, 4.4), &p.water); // agua
     add(o, (-3.45, 0.05, 2.75), (-2.95, 1.1, 3.25), &p.stone); // pilar fuente
     add(o, (-3.6, 1.1, 2.6), (-2.8, 1.25, 3.4), &p.metal); // cuenco
+}
+
+// Cascada: el estanque desborda por un canal de piedra hasta el borde de la
+// isla y el agua cae al vacio, deshaciendose en gotas.
+fn waterfall(o: &mut Vec<Cube>, p: &Palette) {
+    // Canal con paredes de piedra.
+    add(o, (-7.0, 0.0, 2.5), (-5.2, 0.5, 2.7), &p.stone);
+    add(o, (-7.0, 0.0, 3.3), (-5.2, 0.5, 3.5), &p.stone);
+    add(o, (-7.0, 0.0, 2.7), (-4.9, 0.4, 3.3), &p.water);
+
+    // Caida de agua pegada al costado de la isla.
+    add(o, (-7.25, -3.2, 2.7), (-7.0, 0.4, 3.3), &p.water);
+
+    // Gotas que se separan al final de la caida.
+    add(o, (-7.22, -3.8, 2.8), (-7.05, -3.5, 2.97), &p.water);
+    add(o, (-7.2, -4.4, 3.02), (-7.08, -4.2, 3.14), &p.water);
+    add(o, (-7.18, -4.9, 2.85), (-7.1, -4.78, 2.93), &p.water);
 }
 
 // Templo: terraza, escalinata, estilobato, columnas (una rota), dinteles y
