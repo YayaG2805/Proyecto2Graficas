@@ -4,6 +4,7 @@ mod cube;
 mod framebuffer;
 mod group;
 mod light;
+mod material;
 mod procedural;
 mod ray_intersect;
 mod scene;
@@ -39,7 +40,8 @@ fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, light: &Ligh
 
     let light_dir = normalize(&(light.position - intersect.point));
     let diffuse_intensity = dot(&intersect.normal, &light_dir).max(0.0);
-    let diffuse_color = intersect.material.diffuse_at(intersect.u, intersect.v);
+    let material = &scene.materials[intersect.material_id];
+    let diffuse_color = material.diffuse_at(intersect.u, intersect.v);
 
     diffuse_color * light.color * (diffuse_intensity * light.intensity) + diffuse_color * AMBIENT
 }

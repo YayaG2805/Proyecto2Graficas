@@ -1,15 +1,16 @@
 use nalgebra_glm::Vec3;
 
-use crate::ray_intersect::{Intersect, Material, RayIntersect};
+use crate::material::MaterialId;
+use crate::ray_intersect::{Intersect, RayIntersect};
 
 pub struct Cube {
     pub min: Vec3,
     pub max: Vec3,
-    pub material: Material,
+    pub material: MaterialId,
 }
 
 impl Cube {
-    pub fn new(center: Vec3, size: f32, material: Material) -> Self {
+    pub fn new(center: Vec3, size: f32, material: MaterialId) -> Self {
         let half = size / 2.0;
         Cube {
             min: Vec3::new(center.x - half, center.y - half, center.z - half),
@@ -21,7 +22,7 @@ impl Cube {
     // Caja de cualquier tamaño definida por sus dos esquinas opuestas.
     // Es la pieza basica del diorama: un piso, una columna o un tablon son
     // una sola caja estirada en vez de muchos cubos de 1x1.
-    pub fn from_min_max(min: Vec3, max: Vec3, material: Material) -> Self {
+    pub fn from_min_max(min: Vec3, max: Vec3, material: MaterialId) -> Self {
         Cube { min, max, material }
     }
 }
@@ -101,6 +102,6 @@ impl RayIntersect for Cube {
             (Vec3::new(0.0, 0.0, 1.0), point.x, point.y)
         };
 
-        Intersect::new(point, normal, distance, self.material.clone(), u, v)
+        Intersect::new(point, normal, distance, self.material, u, v)
     }
 }
