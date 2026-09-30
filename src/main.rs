@@ -222,6 +222,9 @@ fn main() {
     let mut render_ms = 0.0;
     let mut screenshot_count = 0;
     let mut auto_rotate = false;
+    // P: con la vista previa apagada se renderiza siempre a resolucion
+    // completa, aunque la camara se mueva (mas lento, pero mejor para grabar).
+    let mut preview_enabled = true;
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time();
@@ -230,9 +233,17 @@ fn main() {
         if rl.is_key_pressed(KeyboardKey::KEY_SPACE) {
             auto_rotate = !auto_rotate;
         }
+        if rl.is_key_pressed(KeyboardKey::KEY_P) {
+            preview_enabled = !preview_enabled;
+        }
 
         let start = std::time::Instant::now();
-        if handle_camera_input(&rl, &mut camera, auto_rotate, dt) {
+        let camera_moving = handle_camera_input(&rl, &mut camera, auto_rotate, dt);
+        if camera_moving {
+            needs_full_render = true;
+        }
+
+        if camera_moving && preview_enabled {
             // En movimiento: vista previa rapida.
             render(&mut preview_framebuffer, &scene, &camera);
             preview_texture
@@ -240,9 +251,8 @@ fn main() {
                 .expect("no se pudo actualizar la textura de vista previa");
             render_ms = start.elapsed().as_secs_f32() * 1000.0;
             showing_preview = true;
-            needs_full_render = true;
         } else if needs_full_render {
-            // Quieta: render a resolucion completa (una sola vez).
+            // Quieta (o vista previa apagada): render a resolucion completa.
             render(&mut framebuffer, &scene, &camera);
             screen_texture
                 .update_texture(&framebuffer.to_rgba_bytes())
