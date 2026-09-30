@@ -30,6 +30,39 @@ pub fn mix(a: Color, b: Color, t: f32) -> Color {
     a * (1.0 - t) + b * t
 }
 
+// Ruido suave ("value noise"): valores del hash en los puntos enteros de una
+// cuadricula, interpolados suavemente en medio. A diferencia del hash, que
+// cambia bruscamente de un pixel a otro, este varia de forma continua.
+pub fn value_noise(x: f32, y: f32, seed: u32) -> f32 {
+    let (xi, yi) = (x.floor() as i32, y.floor() as i32);
+    let (xf, yf) = (x - x.floor(), y - y.floor());
+    // Curva suave (smoothstep) para que no se noten las lineas de la cuadricula.
+    let (u, v) = (xf * xf * (3.0 - 2.0 * xf), yf * yf * (3.0 - 2.0 * yf));
+
+    let a = hash(xi, yi, seed);
+    let b = hash(xi + 1, yi, seed);
+    let c = hash(xi, yi + 1, seed);
+    let d = hash(xi + 1, yi + 1, seed);
+    let top = a + (b - a) * u;
+    let bottom = c + (d - c) * u;
+    top + (bottom - top) * v
+}
+
+// Suma de varias capas ("octavas") de value noise, cada una con el doble de
+// detalle y la mitad de fuerza: formas grandes con detalle pequeno encima,
+// como las nubes. Resultado entre 0 y 1.
+pub fn fractal_noise(x: f32, y: f32, seed: u32) -> f32 {
+    let mut total = 0.0;
+    let mut amplitude = 0.5;
+    let mut frequency = 1.0;
+    for octave in 0..4 {
+        total += value_noise(x * frequency, y * frequency, seed + octave) * amplitude;
+        amplitude *= 0.5;
+        frequency *= 2.0;
+    }
+    total / 0.9375 // suma de las amplitudes (0.5 + 0.25 + 0.125 + 0.0625)
+}
+
 // Recorre todos los pixeles y arma la textura con la funcion `pixel(x, y)`.
 fn generate(pixel: impl Fn(i32, i32) -> Color) -> Texture {
     let mut pixels = Vec::with_capacity((SIZE * SIZE) as usize);

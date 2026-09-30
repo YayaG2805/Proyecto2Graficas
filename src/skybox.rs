@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use nalgebra_glm::{dot, Vec3};
 
 use crate::color::Color;
-use crate::procedural::{hash, mix};
+use crate::procedural::{fractal_noise, hash, mix};
 
 // ============================================================
 // Skybox procedural: cielo de atardecer
@@ -38,6 +38,10 @@ const BELOW_STOPS: [(f32, Color); 4] = [
     (1.00, Color { r: 40.0, g: 35.0, b: 80.0 }),
 ];
 
+const CLOUD_COLOR: Color = Color { r: 255.0, g: 205.0, b: 200.0 };
+const FAR_MOUNTAINS: Color = Color { r: 185.0, g: 125.0, b: 160.0 };
+const NEAR_MOUNTAINS: Color = Color { r: 105.0, g: 70.0, b: 120.0 };
+
 const SUN_COLOR: Color = Color { r: 255.0, g: 245.0, b: 220.0 };
 const SUN_GLOW: Color = Color { r: 255.0, g: 190.0, b: 130.0 };
 
@@ -54,9 +58,20 @@ fn gradient(stops: &[(f32, Color)], t: f32) -> Color {
     stops[stops.len() - 1].1
 }
 
+// Altura (como elevacion) de una cordillera en cada azimut: suma de senos
+// con frecuencias enteras, asi el perfil da la vuelta completa sin cortes.
+fn far_ridge(azimuth: f32) -> f32 {
+    0.045 + 0.03 * (3.0 * azimuth + 0.5).sin() + 0.018 * (7.0 * azimuth + 2.0).sin() + 0.008 * (17.0 * azimuth + 1.0).sin()
+}
+
+fn near_ridge(azimuth: f32) -> f32 {
+    0.02 + 0.025 * (5.0 * azimuth + 4.0).sin() + 0.012 * (11.0 * azimuth + 0.3).sin() + 0.006 * (23.0 * azimuth).sin()
+}
+
 impl Skybox {
     pub fn sample(&self, direction: &Vec3) -> Color {
         let elevation = direction.y; // seno del angulo sobre el horizonte
+        let azimuth = direction.z.atan2(direction.x); // angulo horizontal, -PI..PI
 
         let mut color = if elevation >= 0.0 {
             gradient(&SKY_STOPS, elevation)
@@ -68,7 +83,6 @@ impl Skybox {
         // elevacion) y encendemos unas pocas al azar con el hash. Aparecen
         // solo en la parte alta y se desvanecen hacia el horizonte.
         if elevation > 0.25 {
-            let azimuth = direction.z.atan2(direction.x); // -PI..PI
             let cell_x = (azimuth / PI * 900.0).floor() as i32;
             let cell_y = (elevation * 600.0).floor() as i32;
             if hash(cell_x, cell_y, 71) > 0.997 {
@@ -76,6 +90,31 @@ impl Skybox {
                 let brightness = 0.5 + 0.5 * hash(cell_x, cell_y, 72);
                 color = mix(color, Color::new(255.0, 250.0, 240.0), fade * brightness);
             }
+        }
+
+        // Montanas lejanas en silueta, asomando sobre el mar de nubes. La mas
+        // lejana es mas clara porque la bruma la aclara (perspectiva atmosferica).
+        if elevation > -0.01 {
+            if elevation < near_ridge(azimuth) {
+                color = NEAR_MOUNTAINS;
+            } else if elevation < far_ridge(azimuth) {
+                color = FAR_MOUNTAINS;
+            }
+        }
+
+        // Mar de nubes debajo del horizonte: la direccion se proyecta sobre un
+        // plano de nubes imaginario (dividir entre la elevacion: cerca del
+        // horizonte los puntos quedan lejos y las nubes se ven mas pequenas) y
+        // ahi se evalua el ruido fractal. Cerca del horizonte se funden con la
+        // bruma para que no se vea ruido comprimido.
+        if elevation < 0.0 {
+            let depth = -elevation;
+            let plane_x = direction.x / depth;
+            let plane_z = direction.z / depth;
+            let density = fractal_noise(plane_x * 0.6, plane_z * 0.6, 81);
+            let cloud = ((density - 0.42) / 0.25).clamp(0.0, 1.0);
+            let horizon_fade = (depth / 0.12).min(1.0);
+            color = mix(color, CLOUD_COLOR * (0.75 + 0.25 * cloud), cloud * horizon_fade * 0.85);
         }
 
         // Sol: resplandor amplio + halo cercano + disco. cos_angle es 1 justo
