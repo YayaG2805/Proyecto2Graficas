@@ -4,16 +4,16 @@ use raylib::color::Color as RColor;
 use crate::camera::OrbitCamera;
 use crate::color::Color;
 use crate::framebuffer::Framebuffer;
-use crate::light::Light;
 use crate::scene::Scene;
 
 const SKY_COLOR: Color = Color { r: 4.0, g: 12.0, b: 36.0 };
 
-// Luz ambiental minima para que las caras sin luz directa no queden negras
-// y se lea la forma del diorama. Se reemplaza por iluminacion completa en la Fase 6.
-const AMBIENT: f32 = 0.25;
+// Luz ambiental: la luz indirecta que llega desde todo el cielo. Tenida de
+// azul (como el cielo) para que las sombras se vean frias y contrasten con
+// el sol calido. Se multiplica por el color base (Color * Color / 255).
+const AMBIENT_LIGHT: Color = Color { r: 60.0, g: 70.0, b: 100.0 };
 
-pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, light: &Light) -> Color {
+pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene) -> Color {
     let intersect = scene.closest_hit(ray_origin, ray_direction);
 
     if !intersect.is_intersecting {
@@ -23,32 +23,33 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, light: &
     let material = &scene.materials[intersect.material_id];
     let base_color = material.base_color(intersect.u, intersect.v);
     let normal = intersect.normal;
+    let view_dir = -ray_direction; // V: direccion hacia la camara
 
-    // L: direccion hacia la luz.  V: direccion hacia la camara.
-    let light_dir = normalize(&(light.position - intersect.point));
-    let view_dir = -ray_direction;
+    let mut color = base_color * AMBIENT_LIGHT;
 
-    // Difuso (Lambert): mas luz cuanto mas de frente llega a la superficie.
-    let diffuse_intensity = dot(&normal, &light_dir).max(0.0);
-    let diffuse = base_color * light.color * (diffuse_intensity * light.intensity);
+    // Cada luz suma su aporte difuso y especular.
+    for light in &scene.lights {
+        // L: direccion hacia la luz.
+        let light_dir = normalize(&(light.position - intersect.point));
 
-    // Specular (Phong): R es el reflejo de L sobre la normal. Si R apunta a la
-    // camara se ve un brillo; shininess controla que tan concentrado es.
-    // Se omite si la luz llega por detras de la cara (diffuse_intensity = 0).
-    let specular = if diffuse_intensity > 0.0 {
+        // Difuso (Lambert): mas luz cuanto mas de frente llega a la superficie.
+        let diffuse_intensity = dot(&normal, &light_dir).max(0.0);
+        if diffuse_intensity <= 0.0 {
+            continue; // la luz llega por detras de esta cara
+        }
+        color = color + base_color * light.color * (diffuse_intensity * light.intensity);
+
+        // Specular (Phong): R es el reflejo de L sobre la normal. Si R apunta
+        // a la camara se ve un brillo; shininess controla que tan concentrado es.
         let reflect_dir = normal * (2.0 * dot(&normal, &light_dir)) - light_dir;
         let specular_intensity = dot(&reflect_dir, &view_dir).max(0.0).powf(material.shininess);
-        light.color * (material.specular * specular_intensity * light.intensity)
-    } else {
-        Color::new(0.0, 0.0, 0.0)
-    };
+        color = color + light.color * (material.specular * specular_intensity * light.intensity);
+    }
 
-    let ambient = base_color * AMBIENT;
-
-    ambient + diffuse + specular
+    color
 }
 
-pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, light: &Light, camera: &OrbitCamera) {
+pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera) {
     let width = framebuffer.width as f32;
     let height = framebuffer.height as f32;
     let aspect_ratio = width / height;
@@ -71,7 +72,7 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, light: &Light, camer
     }
 
     // thread::scope garantiza que todos los hilos terminan antes de salir,
-    // por eso pueden usar referencias prestadas (scene, light, basis).
+    // por eso pueden usar referencias prestadas (scene, basis).
     std::thread::scope(|scope| {
         for rows in rows_per_thread {
             let basis = &basis;
@@ -84,7 +85,7 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, light: &Light, camer
                         let screen_y = -(2.0 * y as f32) / height + 1.0;
 
                         let ray_direction = basis.ray_direction(screen_x, screen_y);
-                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene, light);
+                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene);
 
                         *pixel = pixel_color.to_raylib();
                     }

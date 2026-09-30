@@ -1,7 +1,9 @@
 use nalgebra_glm::Vec3;
 
+use crate::color::Color;
 use crate::cube::Cube;
 use crate::group::Group;
+use crate::light::Light;
 use crate::procedural;
 use crate::material::{Material, MaterialId};
 use crate::ray_intersect::{Intersect, RayIntersect};
@@ -70,6 +72,7 @@ fn add(objects: &mut Vec<Cube>, min: (f32, f32, f32), max: (f32, f32, f32), mate
 pub struct Scene {
     pub materials: Vec<Material>,
     pub groups: Vec<Group>,
+    pub lights: Vec<Light>,
 }
 
 impl Scene {
@@ -143,7 +146,19 @@ pub fn build_scene() -> Scene {
         })
         .collect();
 
-    Scene { materials, groups }
+    Scene { materials, groups, lights: build_lights() }
+}
+
+// Iluminacion: una luz principal calida y una de relleno fria (el contraste
+// calido/frio da volumen y atractivo). Las luces estan lejos para que su
+// direccion casi no cambie de un extremo del diorama al otro, como el sol.
+fn build_lights() -> Vec<Light> {
+    vec![
+        // Sol de la tarde: arriba a la izquierda, calido y fuerte.
+        Light::new(Vec3::new(-20.0, 30.0, 15.0), 1.0, Color::new(255.0, 230.0, 190.0)),
+        // Relleno: desde el lado contrario, frio y debil, como el cielo.
+        Light::new(Vec3::new(25.0, 18.0, -20.0), 0.35, Color::new(150.0, 175.0, 255.0)),
+    ]
 }
 
 // Isla principal: capas de roca cada vez mas pequenas hacia abajo (piramide

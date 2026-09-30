@@ -16,9 +16,7 @@ use raylib::color::Color as RColor;
 use raylib::prelude::*;
 
 use camera::OrbitCamera;
-use color::Color;
 use framebuffer::Framebuffer;
-use light::Light;
 use renderer::render;
 use scene::Scene;
 
@@ -101,8 +99,6 @@ fn main() {
     println!("Escena: {} cajas en {} grupos", scene.cube_count(), scene.groups.len());
     print_material_table(&scene);
 
-    let light = Light::new(Vec3::new(-8.0, 12.0, 6.0), 1.0, Color::new(255.0, 255.0, 255.0));
-
     let mut camera = OrbitCamera::new(
         Vec3::new(2.5, 0.5, -0.5), // target: centro del diorama (isla + satelite)
         0.7,                       // yaw
@@ -123,7 +119,7 @@ fn main() {
             camera = OrbitCamera::new(camera.target, parse(&args[3]), parse(&args[4]), parse(&args[5]), camera.fov);
         }
         let start = std::time::Instant::now();
-        render(&mut framebuffer, &scene, &light, &camera);
+        render(&mut framebuffer, &scene, &camera);
         println!("render: {:.0} ms", start.elapsed().as_secs_f32() * 1000.0);
         save_screenshot(&framebuffer, &args[2]);
         return;
@@ -154,7 +150,7 @@ fn main() {
 
         if needs_render {
             let start = std::time::Instant::now();
-            render(&mut framebuffer, &scene, &light, &camera);
+            render(&mut framebuffer, &scene, &camera);
             render_ms = start.elapsed().as_secs_f32() * 1000.0;
             screen_texture
                 .update_texture(&framebuffer.to_rgba_bytes())
