@@ -26,6 +26,9 @@ const ORBIT_SPEED: f32 = 1.5; // radianes/s
 const ZOOM_SPEED: f32 = 8.0; // unidades/s
 const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
 
+// Factor de reduccion de la vista previa mientras la camara se mueve.
+const PREVIEW_SCALE: i32 = 2;
+
 // Lee el teclado/rueda y mueve la camara. Devuelve true si la camara cambio,
 // para solo volver a renderizar cuando hace falta.
 fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> bool {
@@ -143,25 +146,44 @@ fn main() {
         .load_texture_from_image(&thread, &image)
         .expect("no se pudo crear la textura del framebuffer");
 
-    let mut needs_render = true;
+    // Vista previa: mientras la camara se mueve renderizamos a media
+    // resolucion (4 veces menos pixeles) y la mostramos estirada; al soltar
+    // las teclas se renderiza una vez a resolucion completa.
+    let preview_width = window_width / PREVIEW_SCALE;
+    let preview_height = window_height / PREVIEW_SCALE;
+    let mut preview_framebuffer = Framebuffer::new(preview_width, preview_height);
+    let preview_image = Image::gen_image_color(preview_width, preview_height, RColor::BLACK);
+    let mut preview_texture = rl
+        .load_texture_from_image(&thread, &preview_image)
+        .expect("no se pudo crear la textura de vista previa");
+
+    let mut needs_full_render = true;
+    let mut showing_preview = false;
     let mut render_ms = 0.0;
     let mut screenshot_count = 0;
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time();
 
+        let start = std::time::Instant::now();
         if handle_camera_input(&rl, &mut camera, dt) {
-            needs_render = true;
-        }
-
-        if needs_render {
-            let start = std::time::Instant::now();
-            render(&mut framebuffer, &scene, &camera);
+            // En movimiento: vista previa rapida.
+            render(&mut preview_framebuffer, &scene, &camera);
+            preview_texture
+                .update_texture(&preview_framebuffer.to_rgba_bytes())
+                .expect("no se pudo actualizar la textura de vista previa");
             render_ms = start.elapsed().as_secs_f32() * 1000.0;
+            showing_preview = true;
+            needs_full_render = true;
+        } else if needs_full_render {
+            // Quieta: render a resolucion completa (una sola vez).
+            render(&mut framebuffer, &scene, &camera);
             screen_texture
                 .update_texture(&framebuffer.to_rgba_bytes())
                 .expect("no se pudo actualizar la textura del framebuffer");
-            needs_render = false;
+            render_ms = start.elapsed().as_secs_f32() * 1000.0;
+            showing_preview = false;
+            needs_full_render = false;
         }
 
         // F12: guardar captura del render actual (para el README).
@@ -173,7 +195,11 @@ fn main() {
 
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(RColor::BLACK);
-        d.draw_texture(&screen_texture, 0, 0, RColor::WHITE);
+        if showing_preview {
+            d.draw_texture_ex(&preview_texture, Vector2::new(0.0, 0.0), 0.0, PREVIEW_SCALE as f32, RColor::WHITE);
+        } else {
+            d.draw_texture(&screen_texture, 0, 0, RColor::WHITE);
+        }
         d.draw_fps(10, 10);
         d.draw_text(&format!("render: {:.0} ms", render_ms), 10, 32, 20, RColor::WHITE);
     }
