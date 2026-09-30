@@ -27,6 +27,38 @@ const ZOOM_SPEED: f32 = 8.0; // unidades/s
 const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
 const MOUSE_SENSITIVITY: f32 = 0.006; // radianes por pixel arrastrado
 
+// Vistas predefinidas (teclas 1-6) para mostrar cada parte de la rubrica:
+// (nombre, target, yaw, pitch, distance). La 1 es tambien la vista inicial.
+struct View {
+    name: &'static str,
+    target: [f32; 3],
+    yaw: f32,
+    pitch: f32,
+    distance: f32,
+}
+
+const VIEWS: [View; 6] = [
+    View { name: "General", target: [1.5, 1.0, -1.5], yaw: 0.6, pitch: 0.35, distance: 22.0 },
+    View { name: "Altar y cristal", target: [0.0, 3.0, -2.7], yaw: 0.15, pitch: 0.12, distance: 5.5 },
+    View { name: "Estanque", target: [-3.2, 0.4, 3.0], yaw: 0.4, pitch: 0.32, distance: 5.0 },
+    View { name: "Contraluz", target: [1.5, 1.0, -1.5], yaw: 2.18, pitch: -0.2, distance: 20.0 },
+    View { name: "Obelisco", target: [-4.5, 6.5, -9.5], yaw: -0.9, pitch: 0.1, distance: 5.0 },
+    View { name: "Desde abajo", target: [1.5, 1.0, -1.5], yaw: 0.6, pitch: -0.6, distance: 20.0 },
+];
+
+const VIEW_KEYS: [KeyboardKey; 6] = [
+    KeyboardKey::KEY_ONE,
+    KeyboardKey::KEY_TWO,
+    KeyboardKey::KEY_THREE,
+    KeyboardKey::KEY_FOUR,
+    KeyboardKey::KEY_FIVE,
+    KeyboardKey::KEY_SIX,
+];
+
+fn view_target(view: &View) -> Vec3 {
+    Vec3::new(view.target[0], view.target[1], view.target[2])
+}
+
 // Factor de reduccion de la vista previa mientras la camara se mueve.
 const PREVIEW_SCALE: i32 = 2;
 
@@ -57,6 +89,14 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> 
     }
     // Rueda hacia adelante = acercarse.
     delta_zoom -= rl.get_mouse_wheel_move() * WHEEL_ZOOM_STEP;
+
+    // Teclas 1-6: volar a una vista predefinida.
+    for (key, view) in VIEW_KEYS.iter().zip(VIEWS.iter()) {
+        if rl.is_key_pressed(*key) {
+            camera.set_view(view_target(view), view.yaw, view.pitch, view.distance);
+            println!("Vista: {}", view.name);
+        }
+    }
 
     // Arrastrar con clic izquierdo: horizontal gira (yaw), vertical inclina
     // (pitch), como si se agarrara el diorama.
@@ -108,11 +148,13 @@ fn main() {
     println!("Escena: {} cajas en {} grupos", scene.cube_count(), scene.groups.len());
     print_material_table(&scene);
 
+    // Camara inicial: la vista "General" (tecla 1).
+    let start_view = &VIEWS[0];
     let mut camera = OrbitCamera::new(
-        Vec3::new(2.5, 0.5, -0.5), // target: centro del diorama (isla + satelite)
-        0.7,                       // yaw
-        0.35,                      // pitch
-        20.0,                      // distance
+        view_target(start_view),
+        start_view.yaw,
+        start_view.pitch,
+        start_view.distance,
         std::f32::consts::PI / 3.0,
     );
 

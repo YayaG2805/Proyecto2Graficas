@@ -1,4 +1,6 @@
-use nalgebra_glm::{cross, normalize, Vec3};
+use std::f32::consts::TAU;
+
+use nalgebra_glm::{cross, length, normalize, Vec3};
 
 // Camara orbital: en vez de guardar la posicion directamente, guardamos
 // en que punto mira (target) y desde donde lo rodea en coordenadas
@@ -15,6 +17,7 @@ pub struct OrbitCamera {
     pub pitch: f32,    // angulo vertical sobre el horizonte (radianes)
     pub distance: f32, // radio de la orbita
     pub fov: f32,      // campo de vision vertical (radianes)
+    desired_target: Vec3,
     desired_yaw: f32,
     desired_pitch: f32,
     desired_distance: f32,
@@ -51,10 +54,22 @@ impl OrbitCamera {
             pitch,
             distance,
             fov,
+            desired_target: target,
             desired_yaw: yaw,
             desired_pitch: pitch,
             desired_distance: distance,
         }
+    }
+
+    // Lleva la camara (suavemente) a una vista predefinida. El yaw se ajusta
+    // a la vuelta mas cercana (+-2PI) para no girar varias vueltas si antes
+    // se roto mucho.
+    pub fn set_view(&mut self, target: Vec3, yaw: f32, pitch: f32, distance: f32) {
+        let turns = ((self.yaw - yaw) / TAU).round();
+        self.desired_target = target;
+        self.desired_yaw = yaw + turns * TAU;
+        self.desired_pitch = pitch.clamp(MIN_PITCH, MAX_PITCH);
+        self.desired_distance = distance.clamp(MIN_DISTANCE, MAX_DISTANCE);
     }
 
     // Esfericas -> cartesianas, relativas al target.
@@ -86,12 +101,15 @@ impl OrbitCamera {
         self.yaw += (self.desired_yaw - self.yaw) * t;
         self.pitch += (self.desired_pitch - self.pitch) * t;
         self.distance += (self.desired_distance - self.distance) * t;
+        self.target += (self.desired_target - self.target) * t;
 
         // Cuando ya casi llego, se ajusta exacto y se deja de re-renderizar.
         let remaining = (self.desired_yaw - self.yaw).abs()
             + (self.desired_pitch - self.pitch).abs()
-            + (self.desired_distance - self.distance).abs() * 0.1;
+            + (self.desired_distance - self.distance).abs() * 0.1
+            + length(&(self.desired_target - self.target)) * 0.1;
         if remaining < 1e-3 {
+            self.target = self.desired_target;
             self.yaw = self.desired_yaw;
             self.pitch = self.desired_pitch;
             self.distance = self.desired_distance;
