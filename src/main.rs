@@ -29,8 +29,8 @@ const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
 // Factor de reduccion de la vista previa mientras la camara se mueve.
 const PREVIEW_SCALE: i32 = 2;
 
-// Lee el teclado/rueda y mueve la camara. Devuelve true si la camara cambio,
-// para solo volver a renderizar cuando hace falta.
+// Lee el teclado/rueda, mueve la camara (suavemente) y devuelve true si la
+// camara sigue en movimiento, para solo volver a renderizar cuando hace falta.
 fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> bool {
     let mut delta_yaw = 0.0;
     let mut delta_pitch = 0.0;
@@ -57,13 +57,9 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> 
     // Rueda hacia adelante = acercarse.
     delta_zoom -= rl.get_mouse_wheel_move() * WHEEL_ZOOM_STEP;
 
-    if delta_yaw == 0.0 && delta_pitch == 0.0 && delta_zoom == 0.0 {
-        return false;
-    }
-
     camera.orbit(delta_yaw, delta_pitch);
     camera.zoom(delta_zoom);
-    true
+    camera.update(dt)
 }
 
 // Imprime los parametros de cada material al arrancar (evidencia de que cada
