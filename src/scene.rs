@@ -229,6 +229,10 @@ fn floating_rocks(o: &mut Vec<Cube>, p: &Palette) {
 
 // Estanque elevado adelante a la izquierda: borde de piedra, fondo y agua,
 // con un pilar en el centro (la futura fuente).
+//
+// Nota para la refraccion: el agua y los cristales NO comparten caras exactas
+// con sus vecinos (se separan ~0.01-0.02). Si las compartieran, el rayo
+// refractado que sale por esa cara arrancaria dentro de la caja vecina.
 fn pond(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-5.2, 0.0, 4.4), (-1.3, 0.6, 4.7), p.stone); // borde frente
     add(o, (-5.2, 0.0, 1.3), (-1.3, 0.6, 1.6), p.stone); // borde fondo
@@ -236,8 +240,8 @@ fn pond(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-5.2, 0.0, 1.6), (-4.9, 0.6, 2.7), p.stone);
     add(o, (-5.2, 0.0, 3.3), (-4.9, 0.6, 4.4), p.stone);
     add(o, (-1.6, 0.0, 1.6), (-1.3, 0.6, 4.4), p.stone); // borde der
-    add(o, (-4.9, 0.0, 1.6), (-1.6, 0.05, 4.4), p.stone); // fondo
-    add(o, (-4.9, 0.05, 1.6), (-1.6, 0.45, 4.4), p.water); // agua
+    add(o, (-4.9, 0.0, 1.6), (-1.6, 0.03, 4.4), p.stone); // fondo
+    add(o, (-4.89, 0.05, 1.61), (-1.61, 0.45, 4.39), p.water); // agua
     add(o, (-3.45, 0.05, 2.75), (-2.95, 1.1, 3.25), p.stone); // pilar fuente
     add(o, (-3.6, 1.1, 2.6), (-2.8, 1.25, 3.4), p.metal); // cuenco
 }
@@ -248,10 +252,10 @@ fn waterfall(o: &mut Vec<Cube>, p: &Palette) {
     // Canal con paredes de piedra.
     add(o, (-7.0, 0.0, 2.5), (-5.2, 0.5, 2.7), p.stone);
     add(o, (-7.0, 0.0, 3.3), (-5.2, 0.5, 3.5), p.stone);
-    add(o, (-7.0, 0.0, 2.7), (-4.9, 0.4, 3.3), p.water);
+    add(o, (-7.0, 0.02, 2.71), (-4.9, 0.4, 3.29), p.water);
 
     // Caida de agua pegada al costado de la isla.
-    add(o, (-7.25, -3.2, 2.7), (-7.0, 0.4, 3.3), p.water);
+    add(o, (-7.25, -3.2, 2.7), (-7.02, 0.4, 3.3), p.water);
 
     // Gotas que se separan al final de la caida.
     add(o, (-7.22, -3.8, 2.8), (-7.05, -3.5, 2.97), p.water);
@@ -377,9 +381,9 @@ fn bridge_and_satellite(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (11.25, 1.8, -1.05), (11.75, 2.3, -0.55), p.metal);
 
     // Cristales creciendo del suelo.
-    add(o, (12.1, 0.0, 0.9), (12.45, 1.2, 1.25), p.glass);
-    add(o, (12.5, 0.0, 1.3), (12.75, 0.7, 1.55), p.glass);
-    add(o, (11.8, 0.0, 1.4), (12.0, 0.5, 1.6), p.glass);
+    add(o, (12.1, 0.01, 0.9), (12.45, 1.2, 1.25), p.glass);
+    add(o, (12.5, 0.01, 1.3), (12.75, 0.7, 1.55), p.glass);
+    add(o, (11.8, 0.01, 1.4), (12.0, 0.5, 1.6), p.glass);
 }
 
 // Santuario alto: escalones de piedra flotando en espiral desde la terraza
@@ -408,7 +412,7 @@ fn sky_shrine(o: &mut Vec<Cube>, p: &Palette) {
 
     // Obelisco: pedestal de piedra, cristal alto y remate de metal.
     add(o, (-4.9, 5.6, -9.9), (-4.1, 6.0, -9.1), p.stone);
-    add(o, (-4.75, 6.0, -9.75), (-4.25, 7.5, -9.25), p.glass);
+    add(o, (-4.75, 6.02, -9.75), (-4.25, 7.48, -9.25), p.glass);
     add(o, (-4.8, 7.5, -9.8), (-4.2, 7.6, -9.2), p.metal);
 
     // Arbusto al lado del obelisco.
@@ -417,8 +421,8 @@ fn sky_shrine(o: &mut Vec<Cube>, p: &Palette) {
 
 // Cristales creciendo hacia abajo bajo la isla principal.
 fn under_crystals(o: &mut Vec<Cube>, p: &Palette) {
-    add(o, (-3.0, -4.6, -2.6), (-2.6, -3.5, -2.2), p.glass);
-    add(o, (2.2, -4.2, -2.4), (2.5, -3.5, -2.1), p.glass);
+    add(o, (-3.0, -4.6, -2.6), (-2.6, -3.51, -2.2), p.glass);
+    add(o, (2.2, -4.2, -2.4), (2.5, -3.51, -2.1), p.glass);
     add(o, (-1.2, -5.2, 2.3), (-0.8, -4.5, 2.7), p.glass);
     add(o, (0.6, -6.4, 0.0), (0.9, -5.6, 0.3), p.glass);
 }
