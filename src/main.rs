@@ -26,6 +26,7 @@ const ORBIT_SPEED: f32 = 1.5; // radianes/s
 const ZOOM_SPEED: f32 = 8.0; // unidades/s
 const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
 const MOUSE_SENSITIVITY: f32 = 0.006; // radianes por pixel arrastrado
+const AUTO_ROTATE_SPEED: f32 = 0.3; // radianes/s del giro automatico
 
 // Vistas predefinidas (teclas 1-6) para mostrar cada parte de la rubrica:
 // (nombre, target, yaw, pitch, distance). La 1 es tambien la vista inicial.
@@ -64,8 +65,14 @@ const PREVIEW_SCALE: i32 = 2;
 
 // Lee el teclado/rueda, mueve la camara (suavemente) y devuelve true si la
 // camara sigue en movimiento, para solo volver a renderizar cuando hace falta.
-fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> bool {
+fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, auto_rotate: bool, dt: f32) -> bool {
     let mut delta_yaw = 0.0;
+
+    // Giro automatico: rotacion lenta y constante (ideal para el video).
+    if auto_rotate {
+        delta_yaw += AUTO_ROTATE_SPEED * dt;
+    }
+
     let mut delta_pitch = 0.0;
     let mut delta_zoom = 0.0;
 
@@ -89,6 +96,12 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> 
     }
     // Rueda hacia adelante = acercarse.
     delta_zoom -= rl.get_mouse_wheel_move() * WHEEL_ZOOM_STEP;
+
+    // R: volver a la vista general.
+    if rl.is_key_pressed(KeyboardKey::KEY_R) {
+        let view = &VIEWS[0];
+        camera.set_view(view_target(view), view.yaw, view.pitch, view.distance);
+    }
 
     // Teclas 1-6: volar a una vista predefinida.
     for (key, view) in VIEW_KEYS.iter().zip(VIEWS.iter()) {
@@ -208,12 +221,18 @@ fn main() {
     let mut showing_preview = false;
     let mut render_ms = 0.0;
     let mut screenshot_count = 0;
+    let mut auto_rotate = false;
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time();
 
+        // Espacio: activar/desactivar el giro automatico.
+        if rl.is_key_pressed(KeyboardKey::KEY_SPACE) {
+            auto_rotate = !auto_rotate;
+        }
+
         let start = std::time::Instant::now();
-        if handle_camera_input(&rl, &mut camera, dt) {
+        if handle_camera_input(&rl, &mut camera, auto_rotate, dt) {
             // En movimiento: vista previa rapida.
             render(&mut preview_framebuffer, &scene, &camera);
             preview_texture
