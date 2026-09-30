@@ -6,8 +6,6 @@ use crate::color::Color;
 use crate::framebuffer::Framebuffer;
 use crate::scene::Scene;
 
-const SKY_COLOR: Color = Color { r: 4.0, g: 12.0, b: 36.0 };
-
 // Luz ambiental: la luz indirecta que llega desde todo el cielo. Tenida de
 // azul (como el cielo) para que las sombras se vean frias y contrasten con
 // el sol calido. Se multiplica por el color base (Color * Color / 255).
@@ -29,13 +27,14 @@ fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
 
 pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u32) -> Color {
     if depth > MAX_DEPTH {
-        return SKY_COLOR;
+        return scene.skybox.sample(ray_direction);
     }
 
     let intersect = scene.closest_hit(ray_origin, ray_direction);
 
+    // El rayo no golpeo nada: se ve el cielo en esa direccion.
     if !intersect.is_intersecting {
-        return SKY_COLOR;
+        return scene.skybox.sample(ray_direction);
     }
 
     let material = &scene.materials[intersect.material_id];

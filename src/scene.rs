@@ -1,4 +1,4 @@
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{normalize, Vec3};
 
 use crate::color::Color;
 use crate::cube::Cube;
@@ -7,6 +7,7 @@ use crate::light::Light;
 use crate::procedural;
 use crate::material::{Material, MaterialId};
 use crate::ray_intersect::{Intersect, RayIntersect};
+use crate::skybox::Skybox;
 use crate::texture::Texture;
 
 // ============================================================
@@ -73,6 +74,7 @@ pub struct Scene {
     pub materials: Vec<Material>,
     pub groups: Vec<Group>,
     pub lights: Vec<Light>,
+    pub skybox: Skybox,
 }
 
 impl Scene {
@@ -174,7 +176,11 @@ pub fn build_scene() -> Scene {
         })
         .collect();
 
-    Scene { materials, groups, lights: build_lights() }
+    let lights = build_lights();
+    // El disco del sol del skybox apunta hacia la primera luz (el sol).
+    let skybox = Skybox { sun_direction: normalize(&lights[0].position) };
+
+    Scene { materials, groups, lights, skybox }
 }
 
 // Iluminacion: una luz principal calida y una de relleno fria (el contraste

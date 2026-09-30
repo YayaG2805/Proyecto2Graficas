@@ -9,6 +9,7 @@ mod procedural;
 mod ray_intersect;
 mod renderer;
 mod scene;
+mod skybox;
 mod texture;
 
 use nalgebra_glm::Vec3;

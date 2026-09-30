@@ -16,7 +16,7 @@ const SIZE: i32 = 32;
 // Hash entero -> numero en [0, 1). Determinista: la misma entrada siempre da
 // el mismo valor, asi que la textura sale identica en cada ejecucion. La
 // semilla permite tener ruido distinto para cada textura o capa.
-fn hash(x: i32, y: i32, seed: u32) -> f32 {
+pub fn hash(x: i32, y: i32, seed: u32) -> f32 {
     let mut h = (x as u32).wrapping_mul(374_761_393)
         ^ (y as u32).wrapping_mul(668_265_263)
         ^ seed.wrapping_mul(2_246_822_519);
@@ -26,7 +26,7 @@ fn hash(x: i32, y: i32, seed: u32) -> f32 {
 }
 
 // Interpola entre dos colores (t = 0 -> a, t = 1 -> b).
-fn mix(a: Color, b: Color, t: f32) -> Color {
+pub fn mix(a: Color, b: Color, t: f32) -> Color {
     a * (1.0 - t) + b * t
 }
 
