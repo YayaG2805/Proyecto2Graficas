@@ -33,19 +33,40 @@ impl Texture {
         Texture::from_image(&image)
     }
 
-    /// Genera una textura de tablero de ajedrez y la guarda en `path`, para tener
-    /// un archivo de imagen real en el repositorio en lugar de solo datos en memoria.
-    pub fn generate_checkerboard(path: &str, size: i32, squares: i32) -> Self {
-        let image = Image::gen_image_checked(
-            size,
-            size,
-            size / squares,
-            size / squares,
-            RColor::new(200, 170, 110, 255),
-            RColor::new(90, 60, 30, 255),
-        );
+    // Textura a partir de un arreglo de colores (fila por fila), por ejemplo
+    // el resultado de un generador procedural.
+    pub fn from_pixels(width: i32, height: i32, pixels: Vec<Color>) -> Self {
+        assert_eq!(pixels.len(), (width * height) as usize);
+        Texture { width, height, pixels: Arc::new(pixels) }
+    }
+
+    // Exporta la textura como PNG usando Image de raylib (igual que en clase
+    // se exportaba el tablero), para tener archivos de imagen reales.
+    pub fn save_png(&self, path: &str) {
+        let mut image = Image::gen_image_color(self.width, self.height, RColor::BLACK);
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let c = self.pixels[(y * self.width + x) as usize];
+                image.draw_pixel(x, y, c.to_raylib());
+            }
+        }
         image.export_image(path);
-        Texture::from_image(&image)
+    }
+
+    // Si el PNG ya existe lo carga; si no, lo genera con `generate`, lo guarda
+    // y lo usa. Asi las texturas quedan como archivos en assets/ y se pueden
+    // reemplazar por cualquier otra imagen sin tocar el codigo.
+    // (Para regenerarlas despues de cambiar un generador, borrar el PNG.)
+    pub fn load_or_generate(path: &str, generate: fn() -> Texture) -> Self {
+        if std::path::Path::new(path).exists() {
+            return Texture::from_file(path);
+        }
+        if let Some(dir) = std::path::Path::new(path).parent() {
+            std::fs::create_dir_all(dir).expect("no se pudo crear la carpeta de texturas");
+        }
+        let texture = generate();
+        texture.save_png(path);
+        texture
     }
 
     pub fn sample(&self, u: f32, v: f32) -> Color {
