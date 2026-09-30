@@ -11,18 +11,54 @@ use crate::scene::Scene;
 // el sol calido. Se multiplica por el color base (Color * Color / 255).
 const AMBIENT_LIGHT: Color = Color { r: 60.0, g: 70.0, b: 100.0 };
 
-// Separacion del origen de los rayos secundarios (sombra, reflexion)
-// respecto a la superficie, para no volver a chocar con la misma cara.
+// Separacion del origen de los rayos secundarios (sombra, reflexion,
+// refraccion) respecto a la superficie, para no volver a chocar con la
+// misma cara por errores de redondeo.
 const BIAS: f32 = 1e-3;
 
 // Maximo de rebotes de rayos secundarios. Sin limite, dos superficies
-// reflectantes enfrentadas harian una recursion infinita.
-const MAX_DEPTH: u32 = 3;
+// reflectantes enfrentadas harian una recursion infinita. Con 4 un rayo
+// puede entrar a un cristal, salir y todavia ver algo con su reflejo.
+const MAX_DEPTH: u32 = 4;
 
 // Refleja la direccion `incident` sobre la superficie con normal `normal`:
 // R = I - 2(I.N)N (angulo de salida igual al de entrada).
 fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
     incident - normal * (2.0 * dot(incident, normal))
+}
+
+// Refraccion con la ley de Snell (n1 sen(t1) = n2 sen(t2)).
+// `normal` apunta hacia afuera del objeto e `ior` es su indice de refraccion.
+// Devuelve None si hay reflexion interna total (el rayo no puede salir).
+fn refract(incident: &Vec3, normal: &Vec3, ior: f32) -> Option<Vec3> {
+    let mut cos_i = dot(incident, normal).clamp(-1.0, 1.0);
+    let (n, eta) = if cos_i < 0.0 {
+        // Entrando (aire -> material): el rayo va contra la normal.
+        cos_i = -cos_i;
+        (*normal, 1.0 / ior)
+    } else {
+        // Saliendo (material -> aire): se usa la normal invertida.
+        (-normal, ior)
+    };
+
+    // k < 0: el angulo es demasiado inclinado para salir -> reflexion
+    // interna total.
+    let k = 1.0 - eta * eta * (1.0 - cos_i * cos_i);
+    if k < 0.0 {
+        return None;
+    }
+    Some(normalize(&(incident * eta + n * (eta * cos_i - k.sqrt()))))
+}
+
+// Origen de un rayo secundario: el punto desplazado un poco hacia el lado
+// de la superficie al que va el rayo (afuera si se refleja, adentro si se
+// refracta hacia el interior).
+fn offset_origin(point: &Vec3, normal: &Vec3, direction: &Vec3) -> Vec3 {
+    if dot(direction, normal) < 0.0 {
+        point - normal * BIAS
+    } else {
+        point + normal * BIAS
+    }
 }
 
 pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u32) -> Color {
@@ -81,20 +117,43 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
         specular = specular + light.color * (material.specular * specular_intensity * light_intensity);
     }
 
+    let reflectivity = material.reflectivity;
+    let transparency = material.transparency;
+    let mut reflect_weight = reflectivity;
+    let mut refract_weight = 0.0;
+
+    // Refraccion: rayo secundario que atraviesa el material doblandose segun
+    // la ley de Snell. Lo que se ve a traves se filtra por el albedo (el color
+    // del medio, como un vidrio tintado): el agua tine de azul el fondo. La
+    // textura se sigue viendo en la parte de color propio de la superficie.
+    let mut refracted = Color::new(0.0, 0.0, 0.0);
+    if transparency > 0.0 {
+        match refract(ray_direction, &normal, material.refractive_index) {
+            Some(refract_dir) => {
+                let refract_origin = offset_origin(&intersect.point, &normal, &refract_dir);
+                refracted = cast_ray(&refract_origin, &refract_dir, scene, depth + 1) * material.albedo;
+                refract_weight = transparency;
+            }
+            // Reflexion interna total: la parte transparente se refleja.
+            None => reflect_weight += transparency,
+        }
+    }
+
     // Reflexion: rayo secundario en la direccion reflejada; su color (lo que
     // "ve" el reflejo) se mezcla con el color propio segun la reflectividad.
     // El reflejo se filtra por el color de la superficie, como en un metal
     // real: el oro refleja en tonos dorados. En materiales casi blancos
     // (cristal) practicamente no cambia.
-    let reflectivity = material.reflectivity;
     let mut reflected = Color::new(0.0, 0.0, 0.0);
-    if reflectivity > 0.0 {
+    if reflect_weight > 0.0 {
         let reflect_dir = normalize(&reflect(ray_direction, &normal));
-        let reflect_origin = intersect.point + normal * BIAS;
+        let reflect_origin = offset_origin(&intersect.point, &normal, &reflect_dir);
         reflected = cast_ray(&reflect_origin, &reflect_dir, scene, depth + 1) * base_color;
     }
 
-    surface * (1.0 - reflectivity) + reflected * reflectivity + specular
+    // Reparto de la luz: color propio + reflejo + refraccion + brillo.
+    let surface_weight = (1.0 - reflectivity - transparency).max(0.0);
+    surface * surface_weight + reflected * reflect_weight + refracted * refract_weight + specular
 }
 
 pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera) {
