@@ -20,12 +20,32 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, light: &
         return SKY_COLOR;
     }
 
-    let light_dir = normalize(&(light.position - intersect.point));
-    let diffuse_intensity = dot(&intersect.normal, &light_dir).max(0.0);
     let material = &scene.materials[intersect.material_id];
-    let diffuse_color = material.base_color(intersect.u, intersect.v);
+    let base_color = material.base_color(intersect.u, intersect.v);
+    let normal = intersect.normal;
 
-    diffuse_color * light.color * (diffuse_intensity * light.intensity) + diffuse_color * AMBIENT
+    // L: direccion hacia la luz.  V: direccion hacia la camara.
+    let light_dir = normalize(&(light.position - intersect.point));
+    let view_dir = -ray_direction;
+
+    // Difuso (Lambert): mas luz cuanto mas de frente llega a la superficie.
+    let diffuse_intensity = dot(&normal, &light_dir).max(0.0);
+    let diffuse = base_color * light.color * (diffuse_intensity * light.intensity);
+
+    // Specular (Phong): R es el reflejo de L sobre la normal. Si R apunta a la
+    // camara se ve un brillo; shininess controla que tan concentrado es.
+    // Se omite si la luz llega por detras de la cara (diffuse_intensity = 0).
+    let specular = if diffuse_intensity > 0.0 {
+        let reflect_dir = normal * (2.0 * dot(&normal, &light_dir)) - light_dir;
+        let specular_intensity = dot(&reflect_dir, &view_dir).max(0.0).powf(material.shininess);
+        light.color * (material.specular * specular_intensity * light.intensity)
+    } else {
+        Color::new(0.0, 0.0, 0.0)
+    };
+
+    let ambient = base_color * AMBIENT;
+
+    ambient + diffuse + specular
 }
 
 pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, light: &Light, camera: &OrbitCamera) {
