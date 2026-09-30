@@ -4,6 +4,7 @@ mod cube;
 mod framebuffer;
 mod group;
 mod light;
+mod procedural;
 mod ray_intersect;
 mod scene;
 mod texture;

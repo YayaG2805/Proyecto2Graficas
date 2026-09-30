@@ -1,9 +1,10 @@
 use nalgebra_glm::Vec3;
 
-use crate::color::Color;
 use crate::cube::Cube;
 use crate::group::Group;
+use crate::procedural;
 use crate::ray_intersect::{Intersect, Material, RayIntersect};
+use crate::texture::Texture;
 
 // ============================================================
 // SANTUARIO FLOTANTE
@@ -20,8 +21,8 @@ use crate::ray_intersect::{Intersect, Material, RayIntersect};
 //                          cajas    arbol                 (farol, cristales)
 //        (frente, z+)
 //
-// Por ahora cada material es solo un color solido; en las fases 4-5 se
-// convierten en materiales completos con textura, specular, etc.
+// Cada material tiene su textura (Fase 4); en la Fase 5 se agregan albedo,
+// specular, transparencia, reflectividad e indice de refraccion.
 
 pub struct Palette {
     pub stone: Material,
@@ -34,13 +35,18 @@ pub struct Palette {
 
 impl Palette {
     fn new() -> Self {
+        // Cada material usa su propia textura, guardada como PNG en
+        // assets/textures/ (se genera la primera vez que se ejecuta).
+        let texture = |name: &str, generate: fn() -> Texture| {
+            Material::with_texture(Texture::load_or_generate(&format!("assets/textures/{}.png", name), generate))
+        };
         Palette {
-            stone: Material::new(Color::new(150.0, 142.0, 130.0)),
-            wood: Material::new(Color::new(130.0, 85.0, 45.0)),
-            metal: Material::new(Color::new(230.0, 180.0, 70.0)),
-            glass: Material::new(Color::new(150.0, 230.0, 255.0)),
-            water: Material::new(Color::new(40.0, 120.0, 170.0)),
-            grass: Material::new(Color::new(90.0, 150.0, 70.0)),
+            stone: texture("stone", procedural::stone),
+            wood: texture("wood", procedural::wood),
+            metal: texture("metal", procedural::metal),
+            glass: texture("glass", procedural::glass),
+            water: texture("water", procedural::water),
+            grass: texture("grass", procedural::grass),
         }
     }
 }
