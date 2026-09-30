@@ -83,12 +83,15 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
 
     // Reflexion: rayo secundario en la direccion reflejada; su color (lo que
     // "ve" el reflejo) se mezcla con el color propio segun la reflectividad.
+    // El reflejo se filtra por el color de la superficie, como en un metal
+    // real: el oro refleja en tonos dorados. En materiales casi blancos
+    // (cristal) practicamente no cambia.
     let reflectivity = material.reflectivity;
     let mut reflected = Color::new(0.0, 0.0, 0.0);
     if reflectivity > 0.0 {
         let reflect_dir = normalize(&reflect(ray_direction, &normal));
         let reflect_origin = intersect.point + normal * BIAS;
-        reflected = cast_ray(&reflect_origin, &reflect_dir, scene, depth + 1);
+        reflected = cast_ray(&reflect_origin, &reflect_dir, scene, depth + 1) * base_color;
     }
 
     surface * (1.0 - reflectivity) + reflected * reflectivity + specular
