@@ -75,23 +75,30 @@ impl RayIntersect for Cube {
         };
 
         let point = ray_origin + ray_direction * distance;
-        let size = self.max - self.min;
 
-        // Figure out which face was hit by checking which bound the point sits on,
-        // and derive the UV coordinates from the other two axes of that face.
+        // Que cara se golpeo: la coordenada del punto que coincide con un
+        // limite de la caja. La normal apunta hacia afuera de esa cara.
+        //
+        // UV en UNIDADES DE MUNDO: en cada cara se usan los dos ejes que la
+        // recorren (p. ej. en la cara de arriba, x y z), con la posicion
+        // absoluta del punto. Como la textura se repite cada 1.0 (rem_euclid
+        // en sample), cada unidad de mundo muestra la textura una vez: un piso
+        // grande la repite muchas veces en vez de estirarla, una pieza pequena
+        // muestra solo un pedazo, y cajas vecinas quedan alineadas entre si.
+        // Los signos hacen que la textura no quede espejada vista desde afuera.
         let epsilon = 1e-4;
         let (normal, u, v) = if (point.x - self.min.x).abs() < epsilon {
-            (Vec3::new(-1.0, 0.0, 0.0), (self.max.z - point.z) / size.z, (point.y - self.min.y) / size.y)
+            (Vec3::new(-1.0, 0.0, 0.0), -point.z, point.y)
         } else if (point.x - self.max.x).abs() < epsilon {
-            (Vec3::new(1.0, 0.0, 0.0), (point.z - self.min.z) / size.z, (point.y - self.min.y) / size.y)
+            (Vec3::new(1.0, 0.0, 0.0), point.z, point.y)
         } else if (point.y - self.min.y).abs() < epsilon {
-            (Vec3::new(0.0, -1.0, 0.0), (point.x - self.min.x) / size.x, (point.z - self.min.z) / size.z)
+            (Vec3::new(0.0, -1.0, 0.0), point.x, point.z)
         } else if (point.y - self.max.y).abs() < epsilon {
-            (Vec3::new(0.0, 1.0, 0.0), (point.x - self.min.x) / size.x, (self.max.z - point.z) / size.z)
+            (Vec3::new(0.0, 1.0, 0.0), point.x, -point.z)
         } else if (point.z - self.min.z).abs() < epsilon {
-            (Vec3::new(0.0, 0.0, -1.0), (self.max.x - point.x) / size.x, (point.y - self.min.y) / size.y)
+            (Vec3::new(0.0, 0.0, -1.0), -point.x, point.y)
         } else {
-            (Vec3::new(0.0, 0.0, 1.0), (point.x - self.min.x) / size.x, (point.y - self.min.y) / size.y)
+            (Vec3::new(0.0, 0.0, 1.0), point.x, point.y)
         };
 
         Intersect::new(point, normal, distance, self.material.clone(), u, v)
