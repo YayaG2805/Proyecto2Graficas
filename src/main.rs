@@ -25,6 +25,7 @@ use scene::Scene;
 const ORBIT_SPEED: f32 = 1.5; // radianes/s
 const ZOOM_SPEED: f32 = 8.0; // unidades/s
 const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
+const MOUSE_SENSITIVITY: f32 = 0.006; // radianes por pixel arrastrado
 
 // Factor de reduccion de la vista previa mientras la camara se mueve.
 const PREVIEW_SCALE: i32 = 2;
@@ -56,6 +57,14 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> 
     }
     // Rueda hacia adelante = acercarse.
     delta_zoom -= rl.get_mouse_wheel_move() * WHEEL_ZOOM_STEP;
+
+    // Arrastrar con clic izquierdo: horizontal gira (yaw), vertical inclina
+    // (pitch), como si se agarrara el diorama.
+    if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
+        let drag = rl.get_mouse_delta();
+        delta_yaw -= drag.x * MOUSE_SENSITIVITY;
+        delta_pitch += drag.y * MOUSE_SENSITIVITY;
+    }
 
     camera.orbit(delta_yaw, delta_pitch);
     camera.zoom(delta_zoom);
