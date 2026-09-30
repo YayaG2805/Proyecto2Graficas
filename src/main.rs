@@ -111,13 +111,18 @@ fn main() {
     let mut framebuffer = Framebuffer::new(window_width, window_height);
 
     // Modo captura sin ventana:
-    //   cargo run -- --screenshot archivo.png [yaw pitch distance]
+    //   cargo run -- --screenshot archivo.png [yaw pitch distance [tx ty tz]]
     // Renderiza un solo cuadro, lo guarda y termina.
     let args: Vec<String> = std::env::args().collect();
     if args.len() >= 3 && args[1] == "--screenshot" {
+        let parse = |s: &String| s.parse::<f32>().expect("los parametros de camara deben ser numeros");
+        let target = if args.len() >= 9 {
+            Vec3::new(parse(&args[6]), parse(&args[7]), parse(&args[8]))
+        } else {
+            camera.target
+        };
         if args.len() >= 6 {
-            let parse = |s: &String| s.parse::<f32>().expect("yaw/pitch/distance deben ser numeros");
-            camera = OrbitCamera::new(camera.target, parse(&args[3]), parse(&args[4]), parse(&args[5]), camera.fov);
+            camera = OrbitCamera::new(target, parse(&args[3]), parse(&args[4]), parse(&args[5]), camera.fov);
         }
         let start = std::time::Instant::now();
         render(&mut framebuffer, &scene, &camera);
