@@ -1,4 +1,4 @@
-use nalgebra_glm::{dot, normalize, Vec3};
+use nalgebra_glm::{dot, length, normalize, Vec3};
 use raylib::color::Color as RColor;
 
 use crate::camera::OrbitCamera;
@@ -12,6 +12,9 @@ const SKY_COLOR: Color = Color { r: 4.0, g: 12.0, b: 36.0 };
 // azul (como el cielo) para que las sombras se vean frias y contrasten con
 // el sol calido. Se multiplica por el color base (Color * Color / 255).
 const AMBIENT_LIGHT: Color = Color { r: 60.0, g: 70.0, b: 100.0 };
+
+// Separacion del origen de los rayos secundarios respecto a la superficie.
+const SHADOW_BIAS: f32 = 1e-3;
 
 pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene) -> Color {
     let intersect = scene.closest_hit(ray_origin, ray_direction);
@@ -36,6 +39,16 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene) -> Color
         let diffuse_intensity = dot(&normal, &light_dir).max(0.0);
         if diffuse_intensity <= 0.0 {
             continue; // la luz llega por detras de esta cara
+        }
+
+        // Sombra: rayo desde el punto hacia la luz. Si choca con algo antes de
+        // llegar a ella, esta luz no ilumina este punto. El origen se separa
+        // un poco de la superficie (bias) para no chocar con la misma cara
+        // por errores de redondeo ("shadow acne").
+        let shadow_origin = intersect.point + normal * SHADOW_BIAS;
+        let light_distance = length(&(light.position - intersect.point));
+        if scene.is_occluded(&shadow_origin, &light_dir, light_distance) {
+            continue;
         }
         color = color + base_color * light.color * (diffuse_intensity * light.intensity);
 

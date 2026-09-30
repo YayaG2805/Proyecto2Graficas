@@ -109,6 +109,27 @@ impl Scene {
             None => Intersect::empty(),
         }
     }
+
+    // Rayo de sombra: ¿hay ALGUNA caja entre el origen y max_distance?
+    // A diferencia de closest_hit no importa cual es la mas cercana, asi que
+    // se detiene en el primer obstaculo que encuentra (mas barato).
+    pub fn is_occluded(&self, ray_origin: &Vec3, ray_direction: &Vec3, max_distance: f32) -> bool {
+        for group in &self.groups {
+            match group.entry_distance(ray_origin, ray_direction) {
+                Some(entry) if entry < max_distance => {}
+                _ => continue,
+            }
+
+            for cube in &group.cubes {
+                if let Some(distance) = cube.hit_distance(ray_origin, ray_direction) {
+                    if distance < max_distance {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
 }
 
 // Cada funcion de construccion arma una parte del diorama; cada parte se
