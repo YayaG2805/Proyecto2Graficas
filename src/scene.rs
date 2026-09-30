@@ -110,10 +110,14 @@ impl Scene {
         }
     }
 
-    // Rayo de sombra: ¿hay ALGUNA caja entre el origen y max_distance?
-    // A diferencia de closest_hit no importa cual es la mas cercana, asi que
-    // se detiene en el primer obstaculo que encuentra (mas barato).
-    pub fn is_occluded(&self, ray_origin: &Vec3, ray_direction: &Vec3, max_distance: f32) -> bool {
+    // Rayo de sombra: que fraccion de la luz llega desde el origen hasta
+    // max_distance (1.0 = toda, 0.0 = nada). Cada caja en el camino deja
+    // pasar solo su `transparency`: la piedra (0) bloquea todo, el cristal
+    // (0.85) deja pasar casi todo. No importa cual caja es la mas cercana, asi
+    // que en cuanto algo opaco bloquea la luz se detiene (mas barato que
+    // closest_hit).
+    pub fn shadow_transmission(&self, ray_origin: &Vec3, ray_direction: &Vec3, max_distance: f32) -> f32 {
+        let mut transmission = 1.0;
         for group in &self.groups {
             match group.entry_distance(ray_origin, ray_direction) {
                 Some(entry) if entry < max_distance => {}
@@ -123,12 +127,15 @@ impl Scene {
             for cube in &group.cubes {
                 if let Some(distance) = cube.hit_distance(ray_origin, ray_direction) {
                     if distance < max_distance {
-                        return true;
+                        transmission *= self.materials[cube.material].transparency;
+                        if transmission <= 0.0 {
+                            return 0.0;
+                        }
                     }
                 }
             }
         }
-        false
+        transmission
     }
 }
 

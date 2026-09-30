@@ -42,21 +42,24 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene) -> Color
         }
 
         // Sombra: rayo desde el punto hacia la luz. Si choca con algo antes de
-        // llegar a ella, esta luz no ilumina este punto. El origen se separa
-        // un poco de la superficie (bias) para no chocar con la misma cara
-        // por errores de redondeo ("shadow acne").
+        // llegar a ella, a este punto llega solo la fraccion que ese algo deja
+        // pasar (0 si es opaco). El origen se separa un poco de la superficie
+        // (bias) para no chocar con la misma cara por errores de redondeo
+        // ("shadow acne").
         let shadow_origin = intersect.point + normal * SHADOW_BIAS;
         let light_distance = length(&(light.position - intersect.point));
-        if scene.is_occluded(&shadow_origin, &light_dir, light_distance) {
+        let transmission = scene.shadow_transmission(&shadow_origin, &light_dir, light_distance);
+        if transmission <= 0.0 {
             continue;
         }
-        color = color + base_color * light.color * (diffuse_intensity * light.intensity);
+        let light_intensity = light.intensity * transmission;
+        color = color + base_color * light.color * (diffuse_intensity * light_intensity);
 
         // Specular (Phong): R es el reflejo de L sobre la normal. Si R apunta
         // a la camara se ve un brillo; shininess controla que tan concentrado es.
         let reflect_dir = normal * (2.0 * dot(&normal, &light_dir)) - light_dir;
         let specular_intensity = dot(&reflect_dir, &view_dir).max(0.0).powf(material.shininess);
-        color = color + light.color * (material.specular * specular_intensity * light.intensity);
+        color = color + light.color * (material.specular * specular_intensity * light_intensity);
     }
 
     color
