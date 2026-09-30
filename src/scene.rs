@@ -22,8 +22,8 @@ use crate::texture::Texture;
 //                          cajas    arbol                 (farol, cristales)
 //        (frente, z+)
 //
-// Cada material tiene su textura (Fase 4); en la Fase 5 se agregan albedo,
-// specular, transparencia, reflectividad e indice de refraccion.
+// Los parametros de cada material (albedo, specular, reflectividad,
+// transparencia, indice de refraccion) estan en material.rs.
 
 pub struct Palette {
     pub stone: MaterialId,
@@ -39,18 +39,18 @@ impl Palette {
     fn new(materials: &mut Vec<Material>) -> Self {
         // Cada material usa su propia textura, guardada como PNG en
         // assets/textures/ (se genera la primera vez que se ejecuta).
-        let mut register = |name: &str, generate: fn() -> Texture| {
+        let mut register = |name: &str, generate: fn() -> Texture, make: fn(Texture) -> Material| {
             let texture = Texture::load_or_generate(&format!("assets/textures/{}.png", name), generate);
-            materials.push(Material::with_texture(texture));
+            materials.push(make(texture));
             materials.len() - 1
         };
         Palette {
-            stone: register("stone", procedural::stone),
-            wood: register("wood", procedural::wood),
-            metal: register("metal", procedural::metal),
-            glass: register("glass", procedural::glass),
-            water: register("water", procedural::water),
-            grass: register("grass", procedural::grass),
+            stone: register("stone", procedural::stone, Material::stone),
+            wood: register("wood", procedural::wood, Material::wood),
+            metal: register("metal", procedural::metal, Material::metal),
+            glass: register("glass", procedural::glass, Material::glass),
+            water: register("water", procedural::water, Material::water),
+            grass: register("grass", procedural::grass, Material::grass),
         }
     }
 }

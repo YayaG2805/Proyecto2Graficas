@@ -41,7 +41,7 @@ fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, light: &Ligh
     let light_dir = normalize(&(light.position - intersect.point));
     let diffuse_intensity = dot(&intersect.normal, &light_dir).max(0.0);
     let material = &scene.materials[intersect.material_id];
-    let diffuse_color = material.diffuse_at(intersect.u, intersect.v);
+    let diffuse_color = material.base_color(intersect.u, intersect.v);
 
     diffuse_color * light.color * (diffuse_intensity * light.intensity) + diffuse_color * AMBIENT
 }
@@ -129,6 +129,22 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, dt: f32) -> 
     true
 }
 
+// Imprime los parametros de cada material al arrancar (evidencia de que cada
+// uno tiene su propia textura, albedo, specular, transparencia, etc.).
+fn print_material_table(scene: &Scene) {
+    println!(
+        "{:<8} {:>15} {:>8} {:>9} {:>8} {:>8} {:>5}",
+        "Material", "albedo (RGB)", "specular", "shininess", "reflect", "transp", "n"
+    );
+    for m in &scene.materials {
+        println!(
+            "{:<8} {:>5.0},{:>4.0},{:>4.0} {:>8.2} {:>9.0} {:>8.2} {:>8.2} {:>5.2}",
+            m.name, m.albedo.r, m.albedo.g, m.albedo.b, m.specular, m.shininess, m.reflectivity,
+            m.transparency, m.refractive_index
+        );
+    }
+}
+
 // Guarda el contenido del framebuffer como PNG (usando Image de raylib, que
 // ya usabamos en clase para exportar la textura del tablero).
 fn save_screenshot(framebuffer: &Framebuffer, path: &str) {
@@ -148,6 +164,7 @@ fn main() {
 
     let scene = scene::build_scene();
     println!("Escena: {} cajas en {} grupos", scene.cube_count(), scene.groups.len());
+    print_material_table(&scene);
 
     let light = Light::new(Vec3::new(-8.0, 12.0, 6.0), 1.0, Color::new(255.0, 255.0, 255.0));
 

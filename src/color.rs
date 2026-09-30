@@ -12,10 +12,6 @@ impl Color {
         Color { r, g, b }
     }
 
-    pub fn black() -> Self {
-        Color::new(0.0, 0.0, 0.0)
-    }
-
     pub fn to_raylib(&self) -> RColor {
         RColor::new(
             self.r.clamp(0.0, 255.0) as u8,
