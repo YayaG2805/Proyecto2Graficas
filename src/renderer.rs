@@ -13,10 +13,25 @@ const SKY_COLOR: Color = Color { r: 4.0, g: 12.0, b: 36.0 };
 // el sol calido. Se multiplica por el color base (Color * Color / 255).
 const AMBIENT_LIGHT: Color = Color { r: 60.0, g: 70.0, b: 100.0 };
 
-// Separacion del origen de los rayos secundarios respecto a la superficie.
-const SHADOW_BIAS: f32 = 1e-3;
+// Separacion del origen de los rayos secundarios (sombra, reflexion)
+// respecto a la superficie, para no volver a chocar con la misma cara.
+const BIAS: f32 = 1e-3;
 
-pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene) -> Color {
+// Maximo de rebotes de rayos secundarios. Sin limite, dos superficies
+// reflectantes enfrentadas harian una recursion infinita.
+const MAX_DEPTH: u32 = 3;
+
+// Refleja la direccion `incident` sobre la superficie con normal `normal`:
+// R = I - 2(I.N)N (angulo de salida igual al de entrada).
+fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
+    incident - normal * (2.0 * dot(incident, normal))
+}
+
+pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u32) -> Color {
+    if depth > MAX_DEPTH {
+        return SKY_COLOR;
+    }
+
     let intersect = scene.closest_hit(ray_origin, ray_direction);
 
     if !intersect.is_intersecting {
@@ -28,7 +43,11 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene) -> Color
     let normal = intersect.normal;
     let view_dir = -ray_direction; // V: direccion hacia la camara
 
-    let mut color = base_color * AMBIENT_LIGHT;
+    // Color propio de la superficie (ambiente + difuso) y brillo especular
+    // se acumulan por separado: el especular es luz reflejada, asi que no se
+    // atenua con la reflectividad mas abajo.
+    let mut surface = base_color * AMBIENT_LIGHT;
+    let mut specular = Color::new(0.0, 0.0, 0.0);
 
     // Cada luz suma su aporte difuso y especular.
     for light in &scene.lights {
@@ -46,23 +65,34 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene) -> Color
         // pasar (0 si es opaco). El origen se separa un poco de la superficie
         // (bias) para no chocar con la misma cara por errores de redondeo
         // ("shadow acne").
-        let shadow_origin = intersect.point + normal * SHADOW_BIAS;
+        let shadow_origin = intersect.point + normal * BIAS;
         let light_distance = length(&(light.position - intersect.point));
         let transmission = scene.shadow_transmission(&shadow_origin, &light_dir, light_distance);
         if transmission <= 0.0 {
             continue;
         }
         let light_intensity = light.intensity * transmission;
-        color = color + base_color * light.color * (diffuse_intensity * light_intensity);
+        surface = surface + base_color * light.color * (diffuse_intensity * light_intensity);
 
-        // Specular (Phong): R es el reflejo de L sobre la normal. Si R apunta
-        // a la camara se ve un brillo; shininess controla que tan concentrado es.
-        let reflect_dir = normal * (2.0 * dot(&normal, &light_dir)) - light_dir;
-        let specular_intensity = dot(&reflect_dir, &view_dir).max(0.0).powf(material.shininess);
-        color = color + light.color * (material.specular * specular_intensity * light_intensity);
+        // Specular (Phong): R es el reflejo de la luz sobre la normal. Si R
+        // apunta a la camara se ve un brillo; shininess controla que tan
+        // concentrado es.
+        let light_reflect = reflect(&-light_dir, &normal);
+        let specular_intensity = dot(&light_reflect, &view_dir).max(0.0).powf(material.shininess);
+        specular = specular + light.color * (material.specular * specular_intensity * light_intensity);
     }
 
-    color
+    // Reflexion: rayo secundario en la direccion reflejada; su color (lo que
+    // "ve" el reflejo) se mezcla con el color propio segun la reflectividad.
+    let reflectivity = material.reflectivity;
+    let mut reflected = Color::new(0.0, 0.0, 0.0);
+    if reflectivity > 0.0 {
+        let reflect_dir = normalize(&reflect(ray_direction, &normal));
+        let reflect_origin = intersect.point + normal * BIAS;
+        reflected = cast_ray(&reflect_origin, &reflect_dir, scene, depth + 1);
+    }
+
+    surface * (1.0 - reflectivity) + reflected * reflectivity + specular
 }
 
 pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera) {
@@ -101,7 +131,7 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera
                         let screen_y = -(2.0 * y as f32) / height + 1.0;
 
                         let ray_direction = basis.ray_direction(screen_x, screen_y);
-                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene);
+                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene, 0);
 
                         *pixel = pixel_color.to_raylib();
                     }
