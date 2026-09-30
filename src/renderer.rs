@@ -50,6 +50,16 @@ fn refract(incident: &Vec3, normal: &Vec3, ior: f32) -> Option<Vec3> {
     Some(normalize(&(incident * eta + n * (eta * cos_i - k.sqrt()))))
 }
 
+// Fresnel (aproximacion de Schlick): fraccion de la luz que se REFLEJA en
+// la superficie de un material transparente segun el angulo. De frente se
+// refleja poco (R0: 2% en agua, 4% en vidrio); casi a ras de la superficie
+// se refleja casi todo. Por eso un lago visto de lado refleja el cielo.
+fn schlick(incident: &Vec3, normal: &Vec3, ior: f32) -> f32 {
+    let r0 = ((1.0 - ior) / (1.0 + ior)).powi(2);
+    let cos_theta = dot(incident, normal).abs();
+    r0 + (1.0 - r0) * (1.0 - cos_theta).powi(5)
+}
+
 // Origen de un rayo secundario: el punto desplazado un poco hacia el lado
 // de la superficie al que va el rayo (afuera si se refleja, adentro si se
 // refracta hacia el interior).
@@ -132,7 +142,11 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
             Some(refract_dir) => {
                 let refract_origin = offset_origin(&intersect.point, &normal, &refract_dir);
                 refracted = cast_ray(&refract_origin, &refract_dir, scene, depth + 1) * material.albedo;
-                refract_weight = transparency;
+                // Fresnel: de la parte transparente, una fraccion se refleja
+                // (mas cuanto mas de lado se mira) y el resto se refracta.
+                let fresnel = schlick(ray_direction, &normal, material.refractive_index);
+                reflect_weight += transparency * fresnel;
+                refract_weight = transparency * (1.0 - fresnel);
             }
             // Reflexion interna total: la parte transparente se refleja.
             None => reflect_weight += transparency,
