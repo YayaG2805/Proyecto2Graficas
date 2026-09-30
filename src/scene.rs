@@ -188,8 +188,10 @@ pub fn build_scene() -> Scene {
 // direccion casi no cambie de un extremo del diorama al otro, como el sol.
 fn build_lights() -> Vec<Light> {
     vec![
-        // Sol de la tarde: arriba a la izquierda, calido y fuerte.
-        Light::new(Vec3::new(-20.0, 30.0, 15.0), 1.0, Color::new(255.0, 230.0, 190.0)),
+        // Sol del atardecer: bajo (unos 25 grados sobre el horizonte), a la
+        // izquierda. Luz inclinada = sombras largas; algo mas intensa para
+        // compensar que llega de lado a las caras de arriba.
+        Light::new(Vec3::new(-45.0, 25.0, 31.0), 1.25, Color::new(255.0, 225.0, 180.0)),
         // Relleno: desde el lado contrario, frio y debil, como el cielo.
         Light::new(Vec3::new(25.0, 18.0, -20.0), 0.35, Color::new(150.0, 175.0, 255.0)),
     ]
