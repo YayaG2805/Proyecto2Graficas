@@ -21,6 +21,10 @@ const BIAS: f32 = 1e-3;
 // puede entrar a un cristal, salir y todavia ver algo con su reflejo.
 const MAX_DEPTH: u32 = 4;
 
+// Aporte minimo (fraccion del pixel final) para que valga la pena lanzar un
+// rayo secundario. Por debajo de 6% el cambio casi no se nota en pantalla.
+const MIN_CONTRIBUTION: f32 = 0.06;
+
 // Refleja la direccion `incident` sobre la superficie con normal `normal`:
 // R = I - 2(I.N)N (angulo de salida igual al de entrada).
 fn reflect(incident: &Vec3, normal: &Vec3) -> Vec3 {
@@ -71,7 +75,10 @@ fn offset_origin(point: &Vec3, normal: &Vec3, direction: &Vec3) -> Vec3 {
     }
 }
 
-pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u32) -> Color {
+// `weight` es cuanto aporta este rayo al color final del pixel: 1.0 para el
+// rayo primario y, en cada rebote, se multiplica por la fraccion que se
+// refleja o refracta (un reflejo dentro de otro reflejo pesa cada vez menos).
+pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u32, weight: f32) -> Color {
     if depth > MAX_DEPTH {
         return scene.skybox.sample(ray_direction);
     }
@@ -145,6 +152,7 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
 
     let reflectivity = material.reflectivity;
     let transparency = material.transparency;
+    let mut surface_weight = (1.0 - reflectivity - transparency).max(0.0);
     let mut reflect_weight = reflectivity;
     let mut refract_weight = 0.0;
 
@@ -152,21 +160,40 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
     // la ley de Snell. Lo que se ve a traves se filtra por el albedo (el color
     // del medio, como un vidrio tintado): el agua tine de azul el fondo. La
     // textura se sigue viendo en la parte de color propio de la superficie.
-    let mut refracted = Color::new(0.0, 0.0, 0.0);
+    let mut refract_dir = None;
     if transparency > 0.0 {
         match refract(ray_direction, &normal, material.refractive_index) {
-            Some(refract_dir) => {
-                let refract_origin = offset_origin(&intersect.point, &normal, &refract_dir);
-                refracted = cast_ray(&refract_origin, &refract_dir, scene, depth + 1) * material.albedo;
+            Some(dir) => {
                 // Fresnel: de la parte transparente, una fraccion se refleja
                 // (mas cuanto mas de lado se mira) y el resto se refracta.
                 let fresnel = schlick(ray_direction, &normal, material.refractive_index);
                 reflect_weight += transparency * fresnel;
                 refract_weight = transparency * (1.0 - fresnel);
+                refract_dir = Some(dir);
             }
             // Reflexion interna total: la parte transparente se refleja.
             None => reflect_weight += transparency,
         }
+    }
+
+    // Corte por importancia: un rebote que aportaria muy poco al pixel final
+    // no se lanza (un rayo secundario cuesta tanto como uno primario, con sus
+    // sombras y rebotes). Su peso pasa al color propio para que la superficie
+    // no se oscurezca. Asi la piedra (2% de reflejo) no paga un rayo extra
+    // por pixel, pero el metal y el agua siguen reflejando.
+    if weight * reflect_weight < MIN_CONTRIBUTION {
+        surface_weight += reflect_weight;
+        reflect_weight = 0.0;
+    }
+    if weight * refract_weight < MIN_CONTRIBUTION {
+        surface_weight += refract_weight;
+        refract_weight = 0.0;
+    }
+
+    let mut refracted = Color::new(0.0, 0.0, 0.0);
+    if let Some(dir) = refract_dir.filter(|_| refract_weight > 0.0) {
+        let refract_origin = offset_origin(&intersect.point, &normal, &dir);
+        refracted = cast_ray(&refract_origin, &dir, scene, depth + 1, weight * refract_weight) * material.albedo;
     }
 
     // Reflexion: rayo secundario en la direccion reflejada; su color (lo que
@@ -178,11 +205,10 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
     if reflect_weight > 0.0 {
         let reflect_dir = normalize(&reflect(ray_direction, &normal));
         let reflect_origin = offset_origin(&intersect.point, &normal, &reflect_dir);
-        reflected = cast_ray(&reflect_origin, &reflect_dir, scene, depth + 1) * base_color;
+        reflected = cast_ray(&reflect_origin, &reflect_dir, scene, depth + 1, weight * reflect_weight) * base_color;
     }
 
     // Reparto de la luz: color propio + reflejo + refraccion + brillo.
-    let surface_weight = (1.0 - reflectivity - transparency).max(0.0);
     surface * surface_weight + reflected * reflect_weight + refracted * refract_weight + specular
 }
 
@@ -222,7 +248,7 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera
                         let screen_y = -(2.0 * y as f32) / height + 1.0;
 
                         let ray_direction = basis.ray_direction(screen_x, screen_y);
-                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene, 0);
+                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene, 0, 1.0);
 
                         *pixel = pixel_color.to_raylib();
                     }
