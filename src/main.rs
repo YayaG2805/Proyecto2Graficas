@@ -214,6 +214,28 @@ fn main() {
         return;
     }
 
+    // Modo benchmark sin ventana:
+    //   cargo run -- --bench
+    // Renderiza cada vista predefinida varias veces y muestra el tiempo
+    // promedio; sirve para comparar antes y despues de cada optimizacion.
+    if args.len() >= 2 && args[1] == "--bench" {
+        const RUNS: u32 = 10;
+        let mut total_ms = 0.0;
+        for view in &VIEWS {
+            let camera = OrbitCamera::new(view_target(view), view.yaw, view.pitch, view.distance, camera.fov);
+            render(&mut framebuffer, &scene, &camera); // calentamiento
+            let start = std::time::Instant::now();
+            for _ in 0..RUNS {
+                render(&mut framebuffer, &scene, &camera);
+            }
+            let ms = start.elapsed().as_secs_f32() * 1000.0 / RUNS as f32;
+            total_ms += ms;
+            println!("{:<16} {:>6.1} ms", view.name, ms);
+        }
+        println!("{:<16} {:>6.1} ms", "Promedio", total_ms / VIEWS.len() as f32);
+        return;
+    }
+
     let (mut rl, thread) = raylib::init()
         .size(window_width, window_height)
         .title("Proyecto 2 - Raytracing: Santuario flotante")
