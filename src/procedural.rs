@@ -63,6 +63,33 @@ pub fn fractal_noise(x: f32, y: f32, seed: u32) -> f32 {
     total / 0.9375 // suma de las amplitudes (0.5 + 0.25 + 0.125 + 0.0625)
 }
 
+// Value noise que se repite cada `period` unidades: los puntos de la
+// cuadricula se envuelven con rem_euclid, asi el borde derecho usa los
+// mismos valores que el izquierdo. Necesario en texturas, que se repiten
+// cada unidad de mundo y no deben mostrar costuras.
+fn periodic_noise(x: f32, y: f32, period: i32, seed: u32) -> f32 {
+    let (xi, yi) = (x.floor() as i32, y.floor() as i32);
+    let (xf, yf) = (x - x.floor(), y - y.floor());
+    let (u, v) = (xf * xf * (3.0 - 2.0 * xf), yf * yf * (3.0 - 2.0 * yf));
+    let h = |i: i32, j: i32| hash(i.rem_euclid(period), j.rem_euclid(period), seed);
+    let top = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u;
+    let bottom = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
+    top + (bottom - top) * v
+}
+
+// Fractal con octavas periodicas: cada octava duplica la frecuencia y el
+// periodo, asi todas se repiten en el mismo tramo.
+fn periodic_fractal(x: f32, y: f32, period: i32, seed: u32) -> f32 {
+    let mut total = 0.0;
+    let mut amplitude = 0.5;
+    for octave in 0..3 {
+        let scale = (1 << octave) as f32;
+        total += periodic_noise(x * scale, y * scale, period << octave, seed + octave) * amplitude;
+        amplitude *= 0.5;
+    }
+    total / 0.875
+}
+
 // Recorre todos los pixeles y arma la textura con la funcion `pixel(x, y)`.
 fn generate(pixel: impl Fn(i32, i32) -> Color) -> Texture {
     let mut pixels = Vec::with_capacity((SIZE * SIZE) as usize);
@@ -476,5 +503,105 @@ pub fn flowers() -> Texture {
             return if lx == 1 && ly == 1 { color * 1.15 } else { color };
         }
         Color::new(55.0, 105.0, 45.0) * (0.85 + 0.25 * hash(x, y, 173))
+    })
+}
+
+// MARMOL pulido: losas de 16x16 px (media unidad) con juntas finas doradas.
+// Las vetas son lineas onduladas: un seno diagonal cuya fase se deforma con
+// ruido fractal ("turbulencia"), la receta clasica del marmol procedural.
+pub fn marble() -> Texture {
+    generate(|x, y| {
+        let (lx, ly) = (x % 16, y % 16);
+        if lx == 0 || ly == 0 {
+            return Color::new(205.0, 170.0, 95.0); // junta dorada
+        }
+
+        let base = Color::new(238.0, 232.0, 222.0);
+        let vein = Color::new(120.0, 115.0, 125.0);
+        // Ruido periodico de periodo 8 (32 px / 4): se repite sin costuras.
+        let turbulence = periodic_fractal(x as f32 / 4.0, y as f32 / 4.0, 8, 201) * 6.0;
+        let wave = ((x + y) as f32 * TAU / 32.0 + turbulence).sin();
+        // Solo donde el seno pasa cerca de 0 hay veta: lineas delgadas.
+        let vein_strength = (1.0 - wave.abs() * 4.0).max(0.0);
+        let tone = 0.96 + 0.06 * hash(x / 16, y / 16, 202); // cada losa distinta
+        mix(base * tone, vein, vein_strength * 0.7)
+    })
+}
+
+// OBSIDIANA: vidrio volcanico casi negro con un brillo violeta, vetas
+// moradas suaves y destellos dispersos.
+pub fn obsidian() -> Texture {
+    generate(|x, y| {
+        if hash(x, y, 211) > 0.985 {
+            return Color::new(190.0, 160.0, 230.0); // destello
+        }
+        let base = Color::new(28.0, 22.0, 40.0);
+        let violet = Color::new(85.0, 55.0, 120.0);
+        let swirl = periodic_fractal(x as f32 / 8.0, y as f32 / 8.0, 4, 212);
+        mix(base, violet, ((swirl - 0.45) * 3.0).clamp(0.0, 1.0))
+    })
+}
+
+// PAPEL de farolillo: crema calido con varillas de bambu verticales cada
+// 8 px, aros horizontales cada 16 px y fibras sueltas en el papel.
+pub fn paper() -> Texture {
+    generate(|x, y| {
+        if x % 8 == 0 {
+            return Color::new(120.0, 80.0, 40.0); // varilla
+        }
+        if y % 16 == 0 {
+            return Color::new(150.0, 40.0, 30.0); // aro rojo
+        }
+        let base = Color::new(250.0, 225.0, 180.0);
+        let fiber = if hash(x, y, 221) > 0.9 { 0.9 } else { 1.0 };
+        base * (fiber * (0.95 + 0.06 * hash(x / 2, y, 222)))
+    })
+}
+
+// EMPEDRADO: piedras redondeadas de distinto tamano. Es un diagrama de
+// Voronoi: cada celda de 8x8 px tiene un punto al azar y cada pixel
+// pertenece al punto mas cercano. Donde dos puntos quedan casi a la misma
+// distancia esta la junta entre piedras.
+pub fn cobble() -> Texture {
+    const CELL: i32 = 8;
+    const CELLS: i32 = SIZE / CELL;
+    generate(|x, y| {
+        let (cx, cy) = (x / CELL, y / CELL);
+        let mut nearest = (f32::MAX, f32::MAX, 0, 0); // (d1, d2, celda x, celda y)
+        for oy in -1..=1 {
+            for ox in -1..=1 {
+                // La celda vecina se repite con rem_euclid: sin costuras.
+                let (nx, ny) = (cx + ox, cy + oy);
+                let (wx, wy) = (nx.rem_euclid(CELLS), ny.rem_euclid(CELLS));
+                let px = (nx * CELL) as f32 + 1.5 + hash(wx, wy, 231) * 5.0;
+                let py = (ny * CELL) as f32 + 1.5 + hash(wx, wy, 232) * 5.0;
+                let d = ((x as f32 - px).powi(2) + (y as f32 - py).powi(2)).sqrt();
+                if d < nearest.0 {
+                    nearest = (d, nearest.0, wx, wy);
+                } else if d < nearest.1 {
+                    nearest.1 = d;
+                }
+            }
+        }
+        let (d1, d2, wx, wy) = nearest;
+        if d2 - d1 < 1.2 {
+            return Color::new(70.0, 72.0, 60.0); // junta con tierra y musgo
+        }
+        // Cada piedra con su tono, mas clara en el centro (abombada).
+        let base = Color::new(150.0, 145.0, 135.0) * (0.8 + 0.35 * hash(wx, wy, 233));
+        base * (1.1 - 0.06 * d1) * (0.94 + 0.1 * hash(x, y, 234))
+    })
+}
+
+// KOI: escamas naranjas con manchas blancas grandes (ruido suave) y una
+// fila de escamas marcada cada 4 px.
+pub fn koi() -> Texture {
+    generate(|x, y| {
+        let orange = Color::new(245.0, 110.0, 30.0);
+        let white = Color::new(250.0, 245.0, 235.0);
+        let patch = periodic_noise(x as f32 / 8.0, y as f32 / 8.0, 4, 241);
+        let color = if patch > 0.55 { white } else { orange };
+        let scale_row = if (x + if (y / 2) % 2 == 0 { 0 } else { 2 }) % 4 == 0 { 0.85 } else { 1.0 };
+        color * (scale_row * (0.95 + 0.06 * hash(x, y, 242)))
     })
 }
