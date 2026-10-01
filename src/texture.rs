@@ -78,4 +78,30 @@ impl Texture {
 
         self.pixels[(y * self.width + x) as usize]
     }
+
+    // Brillo (0-1) de un texel; las coordenadas se repiten como en sample.
+    fn luminance_at(&self, x: i32, y: i32) -> f32 {
+        let c = self.pixels[(y.rem_euclid(self.height) * self.width + x.rem_euclid(self.width)) as usize];
+        (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255.0
+    }
+
+    // Mapa de alturas para el bump mapping: el brillo de la textura en (u, v)
+    // usado como altura (claro = sobresale, oscuro = hundido, como las juntas
+    // de la piedra). Se interpola entre los 4 texeles vecinos (bilineal) para
+    // que la pendiente cambie suave en vez de a saltos de un texel.
+    pub fn height(&self, u: f32, v: f32) -> f32 {
+        let fx = u.rem_euclid(1.0) * self.width as f32 - 0.5;
+        let fy = (1.0 - v.rem_euclid(1.0)) * self.height as f32 - 0.5;
+        let (x0, y0) = (fx.floor() as i32, fy.floor() as i32);
+        let (tx, ty) = (fx - fx.floor(), fy - fy.floor());
+
+        let top = self.luminance_at(x0, y0) * (1.0 - tx) + self.luminance_at(x0 + 1, y0) * tx;
+        let bottom = self.luminance_at(x0, y0 + 1) * (1.0 - tx) + self.luminance_at(x0 + 1, y0 + 1) * tx;
+        top * (1.0 - ty) + bottom * ty
+    }
+
+    // Tamano de un texel en unidades de UV (para las diferencias finitas).
+    pub fn texel_size(&self) -> f32 {
+        1.0 / self.width as f32
+    }
 }
