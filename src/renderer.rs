@@ -259,7 +259,16 @@ fn apply_fog(color: Color, distance: f32, ray_direction: &Vec3, scene: &Scene) -
     color * (1.0 - fog) + scene.skybox.haze(ray_direction) * fog
 }
 
-pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera) {
+// Posiciones de las muestras dentro de un pixel (0..1 en x e y) para el
+// antialiasing: grilla rotada de 4 muestras. Comparada con una grilla 2x2
+// alineada, cada muestra tiene una x y una y distintas, asi los bordes casi
+// horizontales o casi verticales (muy comunes en cajas) se suavizan mejor.
+const AA_SAMPLES: [(f32, f32); 4] = [(0.375, 0.125), (0.875, 0.375), (0.125, 0.625), (0.625, 0.875)];
+const CENTER_SAMPLE: [(f32, f32); 1] = [(0.5, 0.5)];
+
+// Renderiza la escena. Con `antialias`, cada pixel promedia 4 rayos (4 veces
+// mas lento): se usa cuando la camara esta quieta y en las capturas.
+pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera, antialias: bool) {
     let width = framebuffer.width as f32;
     let height = framebuffer.height as f32;
     let aspect_ratio = width / height;
@@ -282,6 +291,8 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera
     // siguiente. Se bloquea apenas un instante por fila (600 veces por cuadro).
     let rows = Mutex::new(framebuffer.pixels_mut().chunks_mut(row_width).enumerate());
 
+    let samples: &[(f32, f32)] = if antialias { &AA_SAMPLES } else { &CENTER_SAMPLE };
+
     // thread::scope garantiza que todos los hilos terminan antes de salir,
     // por eso pueden usar referencias prestadas (scene, basis, rows).
     std::thread::scope(|scope| {
@@ -295,16 +306,24 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera
                     let Some((y, row)) = next else { break };
 
                     for (x, pixel) in row.iter_mut().enumerate() {
-                        // Pixel -> espacio de pantalla [-1, 1] (y invertida porque en
-                        // pantalla crece hacia abajo), con aspect ratio en x.
-                        let screen_x = ((2.0 * x as f32) / width - 1.0) * aspect_ratio;
-                        let screen_y = -(2.0 * y as f32) / height + 1.0;
+                        // Promedio de las muestras del pixel, cada una ya con
+                        // tone mapping (si se promedia antes, un borde con
+                        // fuego muy brillante dejaria un halo).
+                        let mut sum = Color::new(0.0, 0.0, 0.0);
+                        for (dx, dy) in samples {
+                            // Pixel -> espacio de pantalla [-1, 1] (y invertida porque en
+                            // pantalla crece hacia abajo), con aspect ratio en x.
+                            let screen_x = ((2.0 * (x as f32 + dx)) / width - 1.0) * aspect_ratio;
+                            let screen_y = -(2.0 * (y as f32 + dy)) / height + 1.0;
 
-                        let ray_direction = basis.ray_direction(screen_x, screen_y);
-                        let pixel_color = cast_ray(&basis.eye, &ray_direction, scene, 0, 1.0);
+                            let ray_direction = basis.ray_direction(screen_x, screen_y);
+                            sum = sum + tone_map(cast_ray(&basis.eye, &ray_direction, scene, 0, 1.0));
+                        }
+                        let pixel_color = sum * (1.0 / samples.len() as f32);
 
-                        let ndc_x = (2.0 * x as f32) / width - 1.0;
-                        *pixel = vignette(tone_map(pixel_color), ndc_x, screen_y).to_raylib();
+                        let ndc_x = (2.0 * (x as f32 + 0.5)) / width - 1.0;
+                        let ndc_y = -(2.0 * (y as f32 + 0.5)) / height + 1.0;
+                        *pixel = vignette(pixel_color, ndc_x, ndc_y).to_raylib();
                     }
                 }
             });

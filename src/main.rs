@@ -210,7 +210,7 @@ fn main() {
             camera = OrbitCamera::new(target, parse(&args[3]), parse(&args[4]), parse(&args[5]), camera.fov);
         }
         let start = std::time::Instant::now();
-        render(&mut framebuffer, &scene, &camera);
+        render(&mut framebuffer, &scene, &camera, true);
         println!("render: {:.0} ms", start.elapsed().as_secs_f32() * 1000.0);
         save_screenshot(&framebuffer, &args[2]);
         return;
@@ -225,10 +225,10 @@ fn main() {
         let mut total_ms = 0.0;
         for view in &VIEWS {
             let camera = OrbitCamera::new(view_target(view), view.yaw, view.pitch, view.distance, camera.fov);
-            render(&mut framebuffer, &scene, &camera); // calentamiento
+            render(&mut framebuffer, &scene, &camera, false); // calentamiento
             let start = std::time::Instant::now();
             for _ in 0..RUNS {
-                render(&mut framebuffer, &scene, &camera);
+                render(&mut framebuffer, &scene, &camera, false);
             }
             let ms = start.elapsed().as_secs_f32() * 1000.0 / RUNS as f32;
             total_ms += ms;
@@ -293,7 +293,7 @@ fn main() {
 
         if camera_moving && preview_enabled {
             // En movimiento: vista previa rapida.
-            render(&mut preview_framebuffer, &scene, &camera);
+            render(&mut preview_framebuffer, &scene, &camera, false);
             preview_texture
                 .update_texture(&preview_framebuffer.to_rgba_bytes())
                 .expect("no se pudo actualizar la textura de vista previa");
@@ -301,7 +301,9 @@ fn main() {
             showing_preview = true;
         } else if needs_full_render {
             // Quieta (o vista previa apagada): render a resolucion completa.
-            render(&mut framebuffer, &scene, &camera);
+            // Con la camara quieta se hace una sola vez, asi que se puede
+            // pagar el antialiasing (4 rayos por pixel).
+            render(&mut framebuffer, &scene, &camera, !camera_moving);
             screen_texture
                 .update_texture(&framebuffer.to_rgba_bytes())
                 .expect("no se pudo actualizar la textura del framebuffer");
