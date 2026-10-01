@@ -87,21 +87,26 @@ impl RayIntersect for Cube {
         // grande la repite muchas veces en vez de estirarla, una pieza pequena
         // muestra solo un pedazo, y cajas vecinas quedan alineadas entre si.
         // Los signos hacen que la textura no quede espejada vista desde afuera.
+        // Ademas se guarda en que direccion del mundo crece cada coordenada
+        // (tangente para u, bitangente para v), que usa el bump mapping.
         let epsilon = 1e-4;
-        let (normal, u, v) = if (point.x - self.min.x).abs() < epsilon {
-            (Vec3::new(-1.0, 0.0, 0.0), -point.z, point.y)
+        let x = Vec3::new(1.0, 0.0, 0.0);
+        let y = Vec3::new(0.0, 1.0, 0.0);
+        let z = Vec3::new(0.0, 0.0, 1.0);
+        let (normal, u, v, tangent, bitangent) = if (point.x - self.min.x).abs() < epsilon {
+            (-x, -point.z, point.y, -z, y)
         } else if (point.x - self.max.x).abs() < epsilon {
-            (Vec3::new(1.0, 0.0, 0.0), point.z, point.y)
+            (x, point.z, point.y, z, y)
         } else if (point.y - self.min.y).abs() < epsilon {
-            (Vec3::new(0.0, -1.0, 0.0), point.x, point.z)
+            (-y, point.x, point.z, x, z)
         } else if (point.y - self.max.y).abs() < epsilon {
-            (Vec3::new(0.0, 1.0, 0.0), point.x, -point.z)
+            (y, point.x, -point.z, x, -z)
         } else if (point.z - self.min.z).abs() < epsilon {
-            (Vec3::new(0.0, 0.0, -1.0), -point.x, point.y)
+            (-z, -point.x, point.y, -x, y)
         } else {
-            (Vec3::new(0.0, 0.0, 1.0), point.x, point.y)
+            (z, point.x, point.y, x, y)
         };
 
-        Intersect::new(point, normal, distance, self.material, u, v)
+        Intersect::new(point, normal, distance, self.material, u, v).with_tangents(tangent, bitangent)
     }
 }

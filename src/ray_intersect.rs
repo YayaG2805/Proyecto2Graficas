@@ -11,6 +11,10 @@ pub struct Intersect {
     pub material_id: MaterialId,
     pub u: f32,
     pub v: f32,
+    // Direcciones del mundo en las que crecen u y v sobre la cara golpeada.
+    // Las usa el bump mapping para saber hacia donde inclinar la normal.
+    pub tangent: Vec3,
+    pub bitangent: Vec3,
 }
 
 impl Intersect {
@@ -23,7 +27,16 @@ impl Intersect {
             material_id,
             u,
             v,
+            tangent: Vec3::new(0.0, 0.0, 0.0),
+            bitangent: Vec3::new(0.0, 0.0, 0.0),
         }
+    }
+
+    // Agrega las direcciones de u y v (ver `tangent`).
+    pub fn with_tangents(mut self, tangent: Vec3, bitangent: Vec3) -> Self {
+        self.tangent = tangent;
+        self.bitangent = bitangent;
+        self
     }
 
     pub fn empty() -> Self {
@@ -35,6 +48,8 @@ impl Intersect {
             material_id: 0,
             u: 0.0,
             v: 0.0,
+            tangent: Vec3::new(0.0, 0.0, 0.0),
+            bitangent: Vec3::new(0.0, 0.0, 0.0),
         }
     }
 }
