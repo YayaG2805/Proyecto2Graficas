@@ -140,6 +140,11 @@ impl Material {
         Material { name: "Hojas", ..Material::grass(texture) }
     }
 
+    // Flores del cerezo: mate, con un toque de brillo suave.
+    pub fn blossom(texture: Texture) -> Self {
+        Material { name: "Cerezo", specular: 0.15, shininess: 8.0, ..Material::grass(texture) }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", ..Material::stone(texture) }

@@ -39,6 +39,7 @@ pub struct Palette {
     pub bark: MaterialId,
     pub rock: MaterialId,
     pub leaves: MaterialId,
+    pub blossom: MaterialId,
 }
 
 impl Palette {
@@ -62,6 +63,7 @@ impl Palette {
             bark: register("bark", procedural::bark, Material::bark),
             rock: register("rock", procedural::rock, Material::rock),
             leaves: register("leaves", procedural::leaves, Material::leaves),
+            blossom: register("blossom", procedural::blossom, Material::blossom),
         }
     }
 }
@@ -143,7 +145,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 15] = [
+    let parts: [PartBuilder; 16] = [
         floating_island,
         floating_rocks,
         pond,
@@ -158,6 +160,7 @@ pub fn build_scene() -> Scene {
         gate,
         ruined_walls,
         trees,
+        cherry_tree,
         vegetation,
     ];
 
@@ -511,4 +514,56 @@ fn trees(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-5.6, 0.0, -4.6), (-5.2, 1.8, -4.2), p.bark);
     add(o, (-6.3, 1.5, -5.3), (-4.5, 2.4, -3.5), p.leaves);
     add(o, (-6.0, 2.4, -5.0), (-4.8, 2.9, -3.8), p.leaves);
+}
+
+// Cerezo en flor al frente de la isla: tronco inclinado con ramas, copa
+// irregular hecha de varios bloques rosados, racimos colgando y petalos en
+// el suelo y en el aire, llevados por el viento hacia +x.
+fn cherry_tree(o: &mut Vec<Cube>, p: &Palette) {
+    // Tronco que se inclina un poco hacia +x al subir, y ramas.
+    add(o, (0.75, 0.0, 3.55), (1.1, 1.4, 3.9), p.bark);
+    add(o, (0.9, 1.3, 3.5), (1.25, 2.0, 3.85), p.bark);
+    add(o, (0.25, 1.8, 3.55), (0.95, 1.95, 3.7), p.bark); // rama izq
+    add(o, (0.15, 1.8, 3.5), (0.35, 2.3, 3.7), p.bark);
+    add(o, (1.2, 1.9, 3.6), (1.9, 2.05, 3.75), p.bark); // rama der
+    add(o, (1.75, 1.9, 3.55), (1.95, 2.4, 3.75), p.bark);
+    add(o, (1.0, 1.9, 2.95), (1.15, 2.05, 3.5), p.bark); // rama atras
+
+    // Copa: un bloque central y otros que sobresalen a distintas alturas
+    // para que la silueta no sea una caja.
+    let canopy = [
+        ((0.2, 2.0, 2.8), (1.9, 2.8, 4.5)),
+        ((0.5, 2.8, 3.1), (1.6, 3.3, 4.2)),
+        ((0.8, 3.3, 3.4), (1.3, 3.55, 3.9)),
+        ((-0.5, 1.9, 3.1), (0.5, 2.6, 4.1)),
+        ((1.6, 2.0, 3.3), (2.6, 2.7, 4.3)),
+        ((0.6, 1.8, 4.3), (1.5, 2.4, 4.9)),
+        ((0.4, 2.1, 2.4), (1.3, 2.6, 2.9)),
+    ];
+    for (min, max) in canopy {
+        add(o, min, max, p.blossom);
+    }
+
+    // Racimos colgando bajo el borde de la copa.
+    for (x, z, length) in [(-0.3, 3.4, 0.35), (0.1, 4.0, 0.25), (2.3, 3.6, 0.3), (1.0, 4.7, 0.3), (2.0, 4.1, 0.2)] {
+        add(o, (x, 1.9 - length, z), (x + 0.15, 1.9, z + 0.15), p.blossom);
+    }
+
+    // Petalos caidos alrededor del tronco (posiciones "al azar" con el hash,
+    // siempre las mismas). Muy delgados, apoyados sobre el pasto.
+    for i in 0..36 {
+        let angle = procedural::hash(i, 0, 121) * std::f32::consts::TAU;
+        let radius = 0.4 + 2.0 * procedural::hash(i, 1, 122);
+        let x = 1.0 + angle.cos() * radius + 0.5; // el viento los corre a +x
+        let z = 3.7 + angle.sin() * radius;
+        add(o, (x, 0.0, z), (x + 0.1, 0.012, z + 0.1), p.blossom);
+    }
+
+    // Petalos en el aire, desprendiendose de la copa hacia +x.
+    for i in 0..14 {
+        let x = 1.0 + 4.0 * procedural::hash(i, 2, 123);
+        let y = 0.4 + 2.2 * procedural::hash(i, 3, 124) * (1.0 - (x - 1.0) / 6.0);
+        let z = 2.8 + 2.0 * procedural::hash(i, 4, 125);
+        add(o, (x, y, z), (x + 0.06, y + 0.06, z + 0.06), p.blossom);
+    }
 }

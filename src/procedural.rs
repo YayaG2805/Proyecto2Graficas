@@ -338,3 +338,33 @@ pub fn leaves() -> Texture {
         base * (tone * shade * noise)
     })
 }
+
+// FLOR DE CEREZO: racimos rosados como los de las hojas, con petalos casi
+// blancos sueltos y algun centro magenta.
+pub fn blossom() -> Texture {
+    generate(|x, y| {
+        let row = y / 4;
+        let shifted_x = x + if row % 2 == 0 { 0 } else { 2 };
+        let (cx, cy) = (shifted_x.rem_euclid(4), y % 4);
+        let cluster = (shifted_x.div_euclid(4), row);
+
+        let petal = hash(x, y, 111);
+        if petal > 0.94 {
+            return Color::new(255.0, 240.0, 245.0); // petalo claro
+        }
+        if petal < 0.03 {
+            return Color::new(200.0, 70.0, 130.0); // centro de la flor
+        }
+
+        let base = Color::new(240.0, 150.0, 185.0);
+        let tone = 0.85 + 0.25 * hash(cluster.0, cluster.1, 112);
+        let shade = if cx + cy <= 1 {
+            1.12
+        } else if cx + cy >= 5 {
+            0.78
+        } else {
+            1.0
+        };
+        base * (tone * shade)
+    })
+}
