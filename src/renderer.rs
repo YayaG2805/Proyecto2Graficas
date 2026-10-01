@@ -74,6 +74,22 @@ fn schlick(incident: &Vec3, normal: &Vec3, ior: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0 - cos_theta).powi(5)
 }
 
+// Ondas en el agua (como un normal map, pero calculado): la caja sigue
+// siendo plana, pero la normal se inclina un poco segun la posicion con una
+// suma de senos en distintas direcciones. Asi el reflejo del cielo y la
+// refraccion del fondo se ondulan como en agua real. Se quita la parte de la
+// perturbacion que va en la direccion de la normal para que solo la incline.
+fn ripple_normal(normal: &Vec3, point: &Vec3, amplitude: f32) -> Vec3 {
+    let (x, y, z) = (point.x, point.y, point.z);
+    let wobble = Vec3::new(
+        (z * 7.0 + x * 2.0).sin() + 0.5 * (x * 13.0 - y * 5.0).sin(),
+        (x * 6.0 + z * 4.0).sin() * 0.5,
+        (x * 8.0 - z * 3.0).sin() + 0.5 * (z * 11.0 + y * 6.0).sin(),
+    ) * amplitude;
+    let tangent_wobble = wobble - normal * dot(&wobble, normal);
+    normalize(&(normal + tangent_wobble))
+}
+
 // Origen de un rayo secundario: el punto desplazado un poco hacia el lado
 // de la superficie al que va el rayo (afuera si se refleja, adentro si se
 // refracta hacia el interior).
@@ -109,7 +125,11 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
         return base_color * material.emission;
     }
 
-    let normal = intersect.normal;
+    let normal = if material.ripple > 0.0 {
+        ripple_normal(&intersect.normal, &intersect.point, material.ripple)
+    } else {
+        intersect.normal
+    };
     let view_dir = -ray_direction; // V: direccion hacia la camara
 
     // Color propio de la superficie (ambiente + difuso) y brillo especular

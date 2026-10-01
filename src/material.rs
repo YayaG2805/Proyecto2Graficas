@@ -32,6 +32,9 @@ pub struct Material {
     // Luz propia: la superficie brilla con su color aunque no le llegue luz
     // (fuego). 0 = no emite; 1 = se ve con su color base completo.
     pub emission: f32,
+    // Ondas: cuanto se inclina la normal para simular una superficie que
+    // ondula (agua). 0 = superficie lisa.
+    pub ripple: f32,
 }
 
 impl Material {
@@ -55,6 +58,7 @@ impl Material {
             transparency: 0.0,
             refractive_index: 1.0,
             emission: 0.0,
+            ripple: 0.0,
         }
     }
 
@@ -70,6 +74,7 @@ impl Material {
             transparency: 0.0,
             refractive_index: 1.0,
             emission: 0.0,
+            ripple: 0.0,
         }
     }
 
@@ -85,6 +90,7 @@ impl Material {
             transparency: 0.0,
             refractive_index: 1.0,
             emission: 0.0,
+            ripple: 0.0,
         }
     }
 
@@ -101,6 +107,7 @@ impl Material {
             transparency: 0.85,
             refractive_index: 1.5,
             emission: 0.0,
+            ripple: 0.0,
         }
     }
 
@@ -117,6 +124,7 @@ impl Material {
             transparency: 0.5,
             refractive_index: 1.33,
             emission: 0.0,
+            ripple: 0.12,
         }
     }
 
@@ -144,6 +152,7 @@ impl Material {
             transparency: 0.0,
             refractive_index: 1.0,
             emission: 0.0,
+            ripple: 0.0,
         }
     }
 
@@ -161,6 +170,7 @@ impl Material {
             transparency: 0.0,
             refractive_index: 1.0,
             emission: 1.3,
+            ripple: 0.0,
         }
     }
 }
