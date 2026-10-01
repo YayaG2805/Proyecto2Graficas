@@ -205,6 +205,8 @@ fn build_lights() -> Vec<Light> {
         // alcance corto (ilumina la terraza, las estatuas y las columnas).
         Light::point(Vec3::new(-3.6, 2.3, -0.8), 1.4, Color::new(255.0, 150.0, 60.0), 4.0),
         Light::point(Vec3::new(3.6, 2.3, -0.8), 1.4, Color::new(255.0, 150.0, 60.0), 4.0),
+        // Farol de la isla satelite: mas amarillo y con algo mas de alcance.
+        Light::point(Vec3::new(11.5, 2.04, -0.8), 1.3, Color::new(255.0, 190.0, 100.0), 4.5),
     ]
 }
 
@@ -390,9 +392,15 @@ fn bridge_and_satellite(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (10.3, -1.4, -1.0), (12.7, -0.4, 1.5), p.stone);
     add(o, (10.8, -2.3, -0.5), (12.2, -1.4, 1.0), p.stone);
 
-    // Farol de metal.
+    // Farol de metal: poste, base, nucleo encendido, 4 barrotes y techo.
     add(o, (11.4, 0.0, -0.9), (11.6, 1.8, -0.7), p.metal);
-    add(o, (11.25, 1.8, -1.05), (11.75, 2.3, -0.55), p.metal);
+    add(o, (11.25, 1.8, -1.05), (11.75, 1.88, -0.55), p.metal);
+    add(o, (11.38, 1.88, -0.92), (11.62, 2.2, -0.68), p.fire);
+    for (bx, bz) in [(11.25, -1.05), (11.69, -1.05), (11.25, -0.61), (11.69, -0.61)] {
+        add(o, (bx, 1.88, bz), (bx + 0.06, 2.22, bz + 0.06), p.metal);
+    }
+    add(o, (11.2, 2.22, -1.1), (11.8, 2.3, -0.5), p.metal);
+    add(o, (11.4, 2.3, -0.9), (11.6, 2.38, -0.7), p.metal);
 
     // Cristales creciendo del suelo.
     add(o, (12.1, 0.01, 0.9), (12.45, 1.2, 1.25), p.glass);
