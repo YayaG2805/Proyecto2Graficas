@@ -158,7 +158,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 24] = [
+    let parts: [PartBuilder; 25] = [
         floating_island,
         floating_rocks,
         pond,
@@ -179,6 +179,7 @@ pub fn build_scene() -> Scene {
         flower_beds,
         magic_orbs,
         overgrowth,
+        birds,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -902,5 +903,28 @@ fn overgrowth(o: &mut Vec<Cube>, p: &Palette) {
     for (x, length) in [(-2.95, 0.9), (-0.35, 0.5), (0.25, 0.75), (2.85, 0.6)] {
         add(o, (x, 4.55 - length, -1.3), (x + 0.1, 4.55, -1.26), p.leaves);
         add(o, (x - 0.06, 4.55 - length - 0.12, -1.3), (x + 0.16, 4.55 - length, -1.25), p.leaves);
+    }
+}
+
+// Bandada de pajaros entre la isla y el sol: a contraluz se ven como
+// siluetas oscuras. Cada pajaro es un cuerpo y dos alas en forma de "M"
+// (tramo interior hacia arriba, exterior hacia abajo); vuelan hacia +z.
+fn birds(o: &mut Vec<Cube>, p: &Palette) {
+    for i in 0..7 {
+        // Formacion en "V" con un poco de desorden (hash).
+        let row = (i + 1) / 2;
+        let side = if i % 2 == 0 { 1.0 } else { -1.0 };
+        let x = -9.0 + side * row as f32 * 0.8 + 0.3 * procedural::hash(i, 0, 191);
+        let y = 7.5 + 0.5 * procedural::hash(i, 1, 192) - row as f32 * 0.15;
+        let z = 6.0 - row as f32 * 0.7;
+        let flap = if procedural::hash(i, 2, 193) > 0.5 { 0.12 } else { 0.04 };
+
+        add(o, (x - 0.04, y - 0.03, z - 0.14), (x + 0.04, y + 0.03, z + 0.14), p.bark); // cuerpo
+        for s in [-1.0, 1.0] {
+            let (a0, a1) = (x + s * 0.04, x + s * 0.24);
+            let (b0, b1) = (x + s * 0.24, x + s * 0.42);
+            add(o, (a0.min(a1), y, z - 0.06), (a0.max(a1), y + 0.03 + flap, z + 0.06), p.bark);
+            add(o, (b0.min(b1), y + flap - 0.04, z - 0.04), (b0.max(b1), y + flap, z + 0.04), p.bark);
+        }
     }
 }
