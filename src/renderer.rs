@@ -97,7 +97,17 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
     // Cada luz suma su aporte difuso y especular.
     for light in &scene.lights {
         // L: direccion hacia la luz.
-        let light_dir = normalize(&(light.position - intersect.point));
+        let to_light = light.position - intersect.point;
+        let light_distance = length(&to_light);
+        let light_dir = to_light / light_distance;
+
+        // Atenuacion: las luces cercanas (fuego) pierden fuerza con la
+        // distancia. Fuera de su alcance no aportan nada y nos ahorramos el
+        // rayo de sombra.
+        let attenuation = light.attenuation(light_distance);
+        if attenuation <= 0.0 {
+            continue;
+        }
 
         // Difuso (Lambert): mas luz cuanto mas de frente llega a la superficie.
         let diffuse_intensity = dot(&normal, &light_dir).max(0.0);
@@ -111,12 +121,11 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
         // (bias) para no chocar con la misma cara por errores de redondeo
         // ("shadow acne").
         let shadow_origin = intersect.point + normal * BIAS;
-        let light_distance = length(&(light.position - intersect.point));
         let transmission = scene.shadow_transmission(&shadow_origin, &light_dir, light_distance);
         if transmission <= 0.0 {
             continue;
         }
-        let light_intensity = light.intensity * transmission;
+        let light_intensity = light.intensity * attenuation * transmission;
         surface = surface + base_color * light.color * (diffuse_intensity * light_intensity);
 
         // Specular (Phong): R es el reflejo de la luz sobre la normal. Si R
