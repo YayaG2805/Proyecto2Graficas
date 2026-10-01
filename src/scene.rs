@@ -168,7 +168,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 25] = [
+    let parts: [PartBuilder; 27] = [
         floating_island,
         floating_rocks,
         pond,
@@ -190,6 +190,8 @@ pub fn build_scene() -> Scene {
         magic_orbs,
         overgrowth,
         birds,
+        sky_lanterns,
+        lantern_garland,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -827,8 +829,8 @@ fn pagoda_island(o: &mut Vec<Cube>, p: &Palette) {
     for (sx, sz) in [(-1.0, -1.0), (-1.0, 1.0)] {
         let (lx, lz) = (cx + sx * 1.35, cz + sz * 1.35);
         add(o, (lx - 0.015, 1.75, lz - 0.015), (lx + 0.015, 2.04, lz + 0.015), p.wood);
-        add(o, (lx - 0.1, 1.5, lz - 0.1), (lx + 0.1, 1.75, lz + 0.1), p.cloth);
-        add(o, (lx - 0.06, 1.55, lz - 0.06), (lx + 0.06, 1.7, lz + 0.06), p.fire);
+        add(o, (lx - 0.1, 1.5, lz - 0.1), (lx + 0.1, 1.75, lz + 0.1), p.paper);
+        add(o, (lx - 0.06, 1.46, lz - 0.06), (lx + 0.06, 1.5, lz + 0.06), p.wood);
     }
 
     // Pino pequeno en la esquina: tronco y tres pisos de hojas.
@@ -1006,5 +1008,55 @@ fn birds(o: &mut Vec<Cube>, p: &Palette) {
             add(o, (a0.min(a1), y, z - 0.06), (a0.max(a1), y + 0.03 + flap, z + 0.06), p.bark);
             add(o, (b0.min(b1), y + flap - 0.04, z - 0.04), (b0.max(b1), y + flap, z + 0.04), p.bark);
         }
+    }
+}
+
+// Un farolillo de papel centrado en (x, y, z): cuerpo de papel encendido con
+// tapas de madera arriba y abajo. `size` es la mitad del ancho.
+fn paper_lantern(o: &mut Vec<Cube>, p: &Palette, x: f32, y: f32, z: f32, size: f32) {
+    let h = size * 1.3;
+    add(o, (x - size, y - h, z - size), (x + size, y + h, z + size), p.paper);
+    let cap = size * 0.7;
+    add(o, (x - cap, y + h, z - cap), (x + cap, y + h + size * 0.25, z + cap), p.wood);
+    add(o, (x - cap, y - h - size * 0.25, z - cap), (x + cap, y - h, z + cap), p.wood);
+}
+
+// Farolillos voladores subiendo alrededor del santuario, como en un
+// festival. Se reparten en un anillo con el hash (siempre en el mismo
+// lugar): mas lejos del centro, mas altos y mas chicos, asi la "nube" de
+// luces se pierde en el cielo. Brillan con luz propia, asi que de lejos se
+// ven como puntos calidos contra el atardecer.
+fn sky_lanterns(o: &mut Vec<Cube>, p: &Palette) {
+    for i in 0..40 {
+        let angle = procedural::hash(i, 0, 251) * std::f32::consts::TAU;
+        let t = procedural::hash(i, 1, 252);
+        let radius = 8.5 + 7.5 * t;
+        let x = 1.5 + angle.cos() * radius;
+        let z = -1.5 + angle.sin() * radius;
+        let y = 1.5 + 8.0 * t + 3.0 * procedural::hash(i, 2, 253);
+        let size = 0.14 - 0.04 * t;
+        paper_lantern(o, p, x, y, z, size);
+    }
+}
+
+// Guirnalda de farolillos colgando de una cuerda entre el dintel del templo
+// y el portal del puente. La cuerda cuelga en curva (igual que el puente
+// colgante): linea recta entre los extremos menos un seno.
+fn lantern_garland(o: &mut Vec<Cube>, p: &Palette) {
+    let start = Vec3::new(3.1, 4.6, -1.5);
+    let end = Vec3::new(6.6, 2.35, 0.6);
+    let segments = 14;
+    let point = |t: f32| start + (end - start) * t - Vec3::new(0.0, 0.6 * (std::f32::consts::PI * t).sin(), 0.0);
+    for i in 0..segments {
+        let a = point(i as f32 / segments as f32);
+        let b = point((i + 1) as f32 / segments as f32);
+        let r = 0.012;
+        add(o, (a.x.min(b.x) - r, a.y.min(b.y) - r, a.z.min(b.z) - r), (a.x.max(b.x) + r, a.y.max(b.y) + r, a.z.max(b.z) + r), p.wood);
+    }
+    // Un farolillo cada tanto, colgando un poco bajo la cuerda.
+    for i in 1..5 {
+        let c = point(i as f32 / 5.0);
+        add(o, (c.x - 0.01, c.y - 0.12, c.z - 0.01), (c.x + 0.01, c.y, c.z + 0.01), p.wood);
+        paper_lantern(o, p, c.x, c.y - 0.25, c.z, 0.09);
     }
 }
