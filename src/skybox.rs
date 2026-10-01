@@ -69,6 +69,15 @@ fn near_ridge(azimuth: f32) -> f32 {
 }
 
 impl Skybox {
+    // Color de la bruma (el aire entre la camara y un objeto) en una
+    // direccion: el degradado del cielo mas el resplandor del sol, sin
+    // nubes, estrellas ni montanas. Mas barato que sample().
+    pub fn haze(&self, direction: &Vec3) -> Color {
+        let elevation = direction.y.max(0.0);
+        let cos_angle = dot(direction, &self.sun_direction).max(0.0);
+        gradient(&SKY_STOPS, elevation) + SUN_GLOW * (cos_angle.powf(8.0) * 0.35)
+    }
+
     pub fn sample(&self, direction: &Vec3) -> Color {
         let elevation = direction.y; // seno del angulo sobre el horizonte
         let azimuth = direction.z.atan2(direction.x); // angulo horizontal, -PI..PI

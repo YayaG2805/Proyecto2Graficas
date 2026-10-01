@@ -219,7 +219,24 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
     }
 
     // Reparto de la luz: color propio + reflejo + refraccion + brillo.
-    surface * surface_weight + reflected * reflect_weight + refracted * refract_weight + specular
+    let color = surface * surface_weight + reflected * reflect_weight + refracted * refract_weight + specular;
+    apply_fog(color, intersect.distance, ray_direction, scene)
+}
+
+// Perspectiva atmosferica: el aire no es perfectamente transparente, asi
+// que lo lejano se funde con el color del cielo. Da sensacion de
+// profundidad (las islas del fondo se ven mas claras y "lejanas"). Hasta
+// FOG_START no hay bruma; despues crece como 1 - e^(-densidad * distancia)
+// (la fraccion de luz que el aire absorbe/dispersa en ese tramo).
+const FOG_START: f32 = 10.0;
+const FOG_DENSITY: f32 = 0.018;
+
+fn apply_fog(color: Color, distance: f32, ray_direction: &Vec3, scene: &Scene) -> Color {
+    let fog = 1.0 - (-(distance - FOG_START).max(0.0) * FOG_DENSITY).exp();
+    if fog <= 0.0 {
+        return color;
+    }
+    color * (1.0 - fog) + scene.skybox.haze(ray_direction) * fog
 }
 
 pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera) {
