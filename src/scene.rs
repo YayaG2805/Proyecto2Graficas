@@ -44,6 +44,7 @@ pub struct Palette {
     pub cloth: MaterialId,
     pub scales: MaterialId,
     pub wing: MaterialId,
+    pub tiles: MaterialId,
 }
 
 impl Palette {
@@ -71,6 +72,7 @@ impl Palette {
             cloth: register("cloth", procedural::cloth, Material::cloth),
             scales: register("scales", procedural::scales, Material::scales),
             wing: register("wing", procedural::wing, Material::wing),
+            tiles: register("tiles", procedural::tiles, Material::tiles),
         }
     }
 }
@@ -152,7 +154,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 18] = [
+    let parts: [PartBuilder; 20] = [
         floating_island,
         floating_rocks,
         pond,
@@ -169,6 +171,8 @@ pub fn build_scene() -> Scene {
         trees,
         cherry_tree,
         banners,
+        pagoda_island,
+        hanging_bridge,
         dragons,
         vegetation,
     ];
@@ -625,6 +629,124 @@ fn banners(o: &mut Vec<Cube>, p: &Palette) {
 // pequeno subiendo por la izquierda.
 fn dragons(o: &mut Vec<Cube>, p: &Palette) {
     dragon(o, p, Vec3::new(-5.0, 8.5, -2.0), Heading::PlusX, 1.1, true);
-    dragon(o, p, Vec3::new(11.5, 5.0, -5.0), Heading::MinusZ, 0.9, false);
+    dragon(o, p, Vec3::new(11.5, 7.0, -5.0), Heading::MinusZ, 0.9, false);
     dragon(o, p, Vec3::new(-10.5, 2.5, 3.0), Heading::PlusZ, 0.7, true);
+}
+
+// Un piso de la pagoda centrado en (cx, cz) desde la altura y0: paredes de
+// madera, pilares en las esquinas, una ventana encendida en cada cara y un
+// techo de tejas en dos capas con las puntas levantadas. Devuelve la altura
+// del techo, donde empieza el piso siguiente.
+fn pagoda_tier(o: &mut Vec<Cube>, p: &Palette, cx: f32, cz: f32, y0: f32, half: f32, height: f32, eave: f32) -> f32 {
+    let top = y0 + height;
+    add(o, (cx - half, y0, cz - half), (cx + half, top, cz + half), p.wood);
+
+    // Pilares oscuros un poco afuera de las esquinas.
+    for (sx, sz) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
+        let (px, pz) = (cx + sx * half, cz + sz * half);
+        add(o, (px - 0.08, y0, pz - 0.08), (px + 0.08, top, pz + 0.08), p.bark);
+    }
+
+    // Ventanas: luz calida desde adentro (fuego), una por cara.
+    let (wy0, wy1) = (y0 + height * 0.35, y0 + height * 0.75);
+    let w = (half * 0.35).min(0.25);
+    add(o, (cx - w, wy0, cz + half), (cx + w, wy1, cz + half + 0.02), p.fire);
+    add(o, (cx - w, wy0, cz - half - 0.02), (cx + w, wy1, cz - half), p.fire);
+    add(o, (cx + half, wy0, cz - w), (cx + half + 0.02, wy1, cz + w), p.fire);
+
+    // Alero de madera bajo el techo y techo de tejas en dos capas (la de
+    // arriba mas chica, para dar pendiente).
+    add(o, (cx - eave + 0.1, top - 0.06, cz - eave + 0.1), (cx + eave - 0.1, top, cz + eave - 0.1), p.wood);
+    add(o, (cx - eave, top, cz - eave), (cx + eave, top + 0.16, cz + eave), p.tiles);
+    let inner = eave - (eave - half) * 0.6;
+    add(o, (cx - inner, top + 0.16, cz - inner), (cx + inner, top + 0.3, cz + inner), p.tiles);
+    // Puntas levantadas en las esquinas, tipicas de las pagodas.
+    for (sx, sz) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
+        let (ex, ez) = (cx + sx * (eave - 0.1), cz + sz * (eave - 0.1));
+        add(o, (ex - 0.12, top + 0.16, ez - 0.12), (ex + 0.12, top + 0.32, ez + 0.12), p.tiles);
+        add(o, (ex - 0.06, top + 0.32, ez - 0.06), (ex + 0.06, top + 0.42, ez + 0.06), p.metal);
+    }
+    top + 0.3
+}
+
+// Isla de la pagoda, detras del templo a la derecha: roca escalonada,
+// plataforma de piedra, pagoda de tres pisos con aguja dorada, puerta hacia
+// el puente, farolillos colgando y un pino pequeno.
+fn pagoda_island(o: &mut Vec<Cube>, p: &Palette) {
+    let (cx, cz) = (11.5, -6.0);
+
+    // Isla: pasto y roca escalonada hacia abajo.
+    add(o, (9.5, 0.4, -8.5), (13.5, 0.7, -3.0), p.grass);
+    add(o, (9.8, -0.5, -8.2), (13.2, 0.4, -3.3), p.rock);
+    add(o, (10.3, -1.6, -7.7), (12.7, -0.5, -3.9), p.rock);
+    add(o, (10.9, -2.6, -7.0), (12.1, -1.6, -4.6), p.rock);
+    add(o, (11.3, -3.3, -6.3), (11.8, -2.6, -5.6), p.rock);
+    add(o, (12.4, -1.2, -4.2), (12.8, -0.5, -3.8), p.rock);
+
+    // Plataforma de piedra con escalon hacia el puente (-x).
+    add(o, (cx - 1.4, 0.7, cz - 1.4), (cx + 1.4, 1.0, cz + 1.4), p.stone);
+    add(o, (cx - 1.8, 0.7, cz - 0.5), (cx - 1.4, 0.85, cz + 0.5), p.stone);
+
+    // Tres pisos, cada uno mas pequeno.
+    let mut y = 1.0;
+    y = pagoda_tier(o, p, cx, cz, y, 0.95, 1.1, 1.55);
+    y = pagoda_tier(o, p, cx, cz, y, 0.7, 0.85, 1.2);
+    y = pagoda_tier(o, p, cx, cz, y, 0.45, 0.7, 0.85);
+
+    // Aguja dorada con anillos.
+    add(o, (cx - 0.07, y, cz - 0.07), (cx + 0.07, y + 1.0, cz + 0.07), p.metal);
+    for (i, r) in [0.18, 0.14, 0.1].iter().enumerate() {
+        let ry = y + 0.25 + i as f32 * 0.22;
+        add(o, (cx - r, ry, cz - r), (cx + r, ry + 0.06, cz + r), p.metal);
+    }
+
+    // Puerta de madera oscura hacia el puente.
+    add(o, (cx - 0.97, 1.0, cz - 0.3), (cx - 0.95, 1.8, cz + 0.3), p.bark);
+
+    // Farolillos colgando de las esquinas del primer techo.
+    for (sx, sz) in [(-1.0, -1.0), (-1.0, 1.0)] {
+        let (lx, lz) = (cx + sx * 1.35, cz + sz * 1.35);
+        add(o, (lx - 0.015, 1.75, lz - 0.015), (lx + 0.015, 2.04, lz + 0.015), p.wood);
+        add(o, (lx - 0.1, 1.5, lz - 0.1), (lx + 0.1, 1.75, lz + 0.1), p.cloth);
+        add(o, (lx - 0.06, 1.55, lz - 0.06), (lx + 0.06, 1.7, lz + 0.06), p.fire);
+    }
+
+    // Pino pequeno en la esquina: tronco y tres pisos de hojas.
+    let (tx, tz) = (13.0, -3.6);
+    add(o, (tx - 0.1, 0.7, tz - 0.1), (tx + 0.1, 1.6, tz + 0.1), p.bark);
+    for (i, r) in [0.45, 0.33, 0.2].iter().enumerate() {
+        let ty = 1.1 + i as f32 * 0.4;
+        add(o, (tx - r, ty, tz - r), (tx + r, ty + 0.4, tz + r), p.leaves);
+    }
+}
+
+// Puente colgante de tablones entre la isla principal y la de la pagoda.
+// Cada tablon baja segun una curva (como una cuerda que cuelga): la altura
+// va de un extremo al otro en linea recta y se le resta un seno que es 0 en
+// las puntas y maximo en el medio. Las cuerdas laterales siguen la misma
+// curva.
+fn hanging_bridge(o: &mut Vec<Cube>, p: &Palette) {
+    let (x_start, x_end) = (7.0, 9.5);
+    let (y_start, y_end) = (0.0, 0.7);
+    let (z0, z1) = (-3.85, -3.15);
+    let planks = 8;
+    let step = (x_end - x_start) / planks as f32;
+
+    for i in 0..planks {
+        let t = (i as f32 + 0.5) / planks as f32;
+        let y = y_start + (y_end - y_start) * t - 0.35 * (std::f32::consts::PI * t).sin();
+        let x = x_start + i as f32 * step;
+        add(o, (x + 0.03, y - 0.08, z0), (x + step - 0.03, y, z1), p.wood);
+        // Cuerdas: un tramo por tablon, a cada lado.
+        for z in [z0 - 0.04, z1] {
+            add(o, (x, y + 0.5, z), (x + step, y + 0.54, z + 0.04), p.wood);
+            add(o, (x + step * 0.45, y, z), (x + step * 0.55, y + 0.5, z + 0.04), p.wood);
+        }
+    }
+    // Postes en los dos extremos.
+    for (x, y) in [(x_start - 0.1, y_start), (x_end, y_end)] {
+        for z in [z0 - 0.1, z1] {
+            add(o, (x, y, z), (x + 0.1, y + 0.75, z + 0.1), p.bark);
+        }
+    }
 }
