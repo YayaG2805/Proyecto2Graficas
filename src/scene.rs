@@ -261,6 +261,29 @@ fn pond(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-4.89, 0.05, 1.61), (-1.61, 0.45, 4.39), p.water); // agua
     add(o, (-3.45, 0.05, 2.75), (-2.95, 1.1, 3.25), p.stone); // pilar fuente
     add(o, (-3.6, 1.1, 2.6), (-2.8, 1.25, 3.4), p.metal); // cuenco
+    fountain(o, p, -3.2, 3.0, 1.25);
+}
+
+// Fuente sobre el cuenco en (cx, cz) a la altura `top`: agua en el cuenco,
+// un chorro vertical y gotas que caen en arco (parabola) hacia los cuatro
+// lados hasta el estanque.
+fn fountain(o: &mut Vec<Cube>, p: &Palette, cx: f32, cz: f32, top: f32) {
+    add(o, (cx - 0.33, top, cz - 0.33), (cx + 0.33, top + 0.05, cz + 0.33), p.water);
+    add(o, (cx - 0.05, top + 0.05, cz - 0.05), (cx + 0.05, top + 0.85, cz + 0.05), p.water);
+    add(o, (cx - 0.09, top + 0.85, cz - 0.09), (cx + 0.09, top + 0.95, cz + 0.09), p.water);
+
+    // Gotas: t avanza por el arco; x sale hacia afuera en linea recta y la
+    // altura sigue una parabola (sube un poco y luego cae).
+    for (dx, dz) in [(1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0)] {
+        for i in 1..=5 {
+            let t = i as f32 / 5.0;
+            let reach = 0.15 + 0.75 * t;
+            let y = top + 0.9 + 0.25 * t - 1.6 * t * t;
+            let (x, z) = (cx + dx * reach, cz + dz * reach);
+            let r = 0.035;
+            add(o, (x - r, y - r, z - r), (x + r, y + r, z + r), p.water);
+        }
+    }
 }
 
 // Cascada: el estanque desborda por un canal de piedra hasta el borde de la
