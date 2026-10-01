@@ -31,7 +31,7 @@ impl Cube {
 // los ejes que forman la caja. Devuelve (t_entrada, t_salida), o None si el
 // rayo no toca la caja o la caja queda completamente detras del origen.
 // Se usa tanto para las cajas del diorama como para las cajas envolventes de
-// los grupos.
+// los nodos del BVH.
 pub fn slab_intersect(min: &Vec3, max: &Vec3, ray_origin: &Vec3, ray_direction: &Vec3) -> Option<(f32, f32)> {
     let inv_dir = Vec3::new(1.0 / ray_direction.x, 1.0 / ray_direction.y, 1.0 / ray_direction.z);
 
