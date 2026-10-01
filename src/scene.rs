@@ -251,11 +251,39 @@ fn floating_island(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (1.8, -4.2, 2.2), (2.4, -3.5, 2.8), p.rock);
 }
 
-// Rocas pequenas flotando alrededor (dan escala y profundidad).
+// Islotes pequenos flotando alrededor (dan escala y profundidad): roca con
+// tapa de pasto y algun detalle, y dos islotes de cristales magicos.
 fn floating_rocks(o: &mut Vec<Cube>, p: &Palette) {
-    o.push(Cube::new(Vec3::new(-9.5, -0.8, 3.5), 0.8, p.rock));
-    o.push(Cube::new(Vec3::new(-8.8, 1.2, -5.0), 0.5, p.rock));
-    o.push(Cube::new(Vec3::new(8.2, 2.5, -5.2), 0.6, p.rock));
+    // Islote con arbusto (atras a la izquierda).
+    add(o, (-9.05, 0.95, -5.25), (-8.55, 1.45, -4.75), p.rock);
+    add(o, (-9.1, 1.45, -5.3), (-8.5, 1.55, -4.7), p.grass);
+    add(o, (-8.95, 1.55, -5.15), (-8.65, 1.85, -4.85), p.leaves);
+
+    // Islote con flores (a la derecha, junto al puente colgante).
+    add(o, (7.9, 2.2, -5.5), (8.5, 2.8, -4.9), p.rock);
+    add(o, (7.85, 2.8, -5.55), (8.55, 2.9, -4.85), p.grass);
+    add(o, (8.0, 2.9, -5.4), (8.2, 3.0, -5.2), p.flowers);
+    add(o, (8.25, 2.9, -5.15), (8.42, 3.05, -4.98), p.flowers);
+
+    // Islotes de cristales: (x, y de la superficie, z).
+    for (x, y, z) in [(-9.5, -0.4, 3.5), (4.0, -2.6, 8.6)] {
+        add(o, (x - 0.45, y - 0.8, z - 0.45), (x + 0.45, y, z + 0.45), p.rock);
+        add(o, (x - 0.25, y - 1.2, z - 0.25), (x + 0.2, y - 0.8, z + 0.2), p.rock);
+        crystal_cluster(o, p, x, y, z);
+    }
+}
+
+// Racimo de cristales sobre (x, y, z): tres cristales de alturas distintas,
+// cada uno con un nucleo de energia brillante adentro que se ve a traves del
+// vidrio (refraccion) como en el cristal del altar.
+fn crystal_cluster(o: &mut Vec<Cube>, p: &Palette, x: f32, y: f32, z: f32) {
+    let crystals = [(0.0, 0.0, 0.15, 0.9), (0.22, 0.15, 0.09, 0.55), (-0.2, 0.18, 0.08, 0.45)];
+    for (dx, dz, half, height) in crystals {
+        let (cx, cz) = (x + dx, z + dz);
+        add(o, (cx - half, y + 0.01, cz - half), (cx + half, y + height, cz + half), p.glass);
+        let core = half * 0.4;
+        add(o, (cx - core, y + height * 0.3, cz - core), (cx + core, y + height * 0.6, cz + core), p.magic);
+    }
 }
 
 // Estanque elevado adelante a la izquierda: borde de piedra, fondo y agua,
