@@ -504,16 +504,39 @@ fn vegetation(o: &mut Vec<Cube>, p: &Palette) {
     }
 }
 
-// Arboles voxel: tronco con corteza y copa de bloques escalonados.
+// Arboles voxel: tronco con raices y una rama, y copa irregular hecha con
+// varios bloques de hojas que sobresalen a distintas alturas.
 fn trees(o: &mut Vec<Cube>, p: &Palette) {
+    // Arbol grande junto a las cajas.
     add(o, (5.5, 0.0, 3.8), (5.9, 2.2, 4.2), p.bark);
-    add(o, (4.7, 1.8, 3.0), (6.7, 2.8, 5.0), p.leaves);
-    add(o, (5.0, 2.8, 3.3), (6.4, 3.4, 4.7), p.leaves);
-    add(o, (5.3, 3.4, 3.6), (6.1, 3.8, 4.4), p.leaves);
+    add(o, (5.35, 0.0, 3.95), (6.05, 0.2, 4.05), p.bark); // raices
+    add(o, (5.65, 0.0, 3.65), (5.75, 0.15, 4.35), p.bark);
+    add(o, (5.9, 1.5, 3.9), (6.5, 1.65, 4.05), p.bark); // rama
+    let canopy = [
+        ((4.7, 1.9, 3.0), (6.7, 2.8, 5.0)),
+        ((5.0, 2.8, 3.3), (6.4, 3.4, 4.7)),
+        ((5.3, 3.4, 3.6), (6.0, 3.8, 4.3)),
+        ((6.3, 1.6, 3.5), (7.0, 2.4, 4.4)),
+        ((4.4, 2.2, 3.6), (4.8, 2.7, 4.5)),
+        ((5.2, 2.4, 4.9), (6.1, 3.0, 5.3)),
+    ];
+    for (min, max) in canopy {
+        add(o, min, max, p.leaves);
+    }
 
+    // Arbol detras del templo, a la izquierda.
     add(o, (-5.6, 0.0, -4.6), (-5.2, 1.8, -4.2), p.bark);
-    add(o, (-6.3, 1.5, -5.3), (-4.5, 2.4, -3.5), p.leaves);
-    add(o, (-6.0, 2.4, -5.0), (-4.8, 2.9, -3.8), p.leaves);
+    add(o, (-5.75, 0.0, -4.45), (-5.05, 0.18, -4.35), p.bark);
+    let canopy = [
+        ((-6.3, 1.5, -5.3), (-4.5, 2.4, -3.5)),
+        ((-6.0, 2.4, -5.0), (-4.8, 2.9, -3.8)),
+        ((-5.7, 2.9, -4.7), (-5.1, 3.2, -4.1)),
+        ((-6.6, 1.7, -4.6), (-6.2, 2.2, -3.9)),
+        ((-5.2, 1.3, -3.7), (-4.6, 1.8, -3.2)),
+    ];
+    for (min, max) in canopy {
+        add(o, min, max, p.leaves);
+    }
 }
 
 // Cerezo en flor al frente de la isla: tronco inclinado con ramas, copa
