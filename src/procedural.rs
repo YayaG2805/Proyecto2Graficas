@@ -227,3 +227,30 @@ pub fn grass() -> Texture {
         base * (patch * blade)
     })
 }
+
+// FUEGO: lenguas de llama verticales que ondulan, de rojo anaranjado en los
+// bordes a amarillo casi blanco en el centro, con chispas sueltas. Se usan
+// senos con periodos que dividen SIZE para que se repita sin costuras.
+pub fn fire() -> Texture {
+    generate(|x, y| {
+        let ember = Color::new(220.0, 70.0, 20.0);
+        let flame = Color::new(255.0, 160.0, 40.0);
+        let core = Color::new(255.0, 240.0, 170.0);
+
+        if hash(x, y, 71) > 0.97 {
+            return core; // chispa
+        }
+
+        // Lenguas: bandas en x (periodo 16 px) que serpentean con y.
+        let fx = x as f32 / 16.0 + 0.2 * (y as f32 * TAU / SIZE as f32).sin();
+        let tongue = 0.5 + 0.5 * (fx * TAU).sin(); // 0 borde, 1 centro
+        let flicker = 0.9 + 0.15 * hash(x / 2, y / 2, 72);
+        let t = (tongue * flicker).min(1.0);
+
+        if t > 0.7 {
+            mix(flame, core, (t - 0.7) / 0.3)
+        } else {
+            mix(ember, flame, t / 0.7)
+        }
+    })
+}

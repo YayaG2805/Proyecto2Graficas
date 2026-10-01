@@ -35,6 +35,7 @@ pub struct Palette {
     pub glass: MaterialId,
     pub water: MaterialId,
     pub grass: MaterialId,
+    pub fire: MaterialId,
 }
 
 impl Palette {
@@ -54,6 +55,7 @@ impl Palette {
             glass: register("glass", procedural::glass, Material::glass),
             water: register("water", procedural::water, Material::water),
             grass: register("grass", procedural::grass, Material::grass),
+            fire: register("fire", procedural::fire, Material::fire),
         }
     }
 }
