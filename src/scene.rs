@@ -189,8 +189,10 @@ pub fn build_scene() -> Scene {
 }
 
 // Iluminacion: una luz principal calida y una de relleno fria (el contraste
-// calido/frio da volumen y atractivo). Las luces estan lejos para que su
+// calido/frio da volumen y atractivo). Estas dos estan lejos para que su
 // direccion casi no cambie de un extremo del diorama al otro, como el sol.
+// Ademas, luces puntuales cercanas para el fuego, que se atenuan con la
+// distancia.
 fn build_lights() -> Vec<Light> {
     vec![
         // Sol del atardecer: bajo (unos 25 grados sobre el horizonte), a la
@@ -199,6 +201,10 @@ fn build_lights() -> Vec<Light> {
         Light::new(Vec3::new(-45.0, 25.0, 31.0), 1.25, Color::new(255.0, 225.0, 180.0)),
         // Relleno: desde el lado contrario, frio y debil, como el cielo.
         Light::new(Vec3::new(25.0, 18.0, -20.0), 0.35, Color::new(150.0, 175.0, 255.0)),
+        // Fuego de los braseros: luz puntual naranja junto a cada llama, con
+        // alcance corto (ilumina la terraza, las estatuas y las columnas).
+        Light::point(Vec3::new(-3.6, 2.3, -0.8), 1.4, Color::new(255.0, 150.0, 60.0), 4.0),
+        Light::point(Vec3::new(3.6, 2.3, -0.8), 1.4, Color::new(255.0, 150.0, 60.0), 4.0),
     ]
 }
 
@@ -315,6 +321,9 @@ fn temple_details(o: &mut Vec<Cube>, p: &Palette) {
         let z = -0.8;
         add(o, (x - 0.08, 1.0, z - 0.08), (x + 0.08, 1.8, z + 0.08), p.metal);
         add(o, (x - 0.25, 1.8, z - 0.25), (x + 0.25, 1.95, z + 0.25), p.metal);
+        // Llama: base ancha y una lengua mas delgada encima.
+        add(o, (x - 0.15, 1.95, z - 0.15), (x + 0.15, 2.3, z + 0.15), p.fire);
+        add(o, (x - 0.07, 2.3, z - 0.05), (x + 0.05, 2.5, z + 0.07), p.fire);
     }
 
     // Campana colgando del dintel lateral, entre las columnas izquierdas.
