@@ -279,3 +279,34 @@ pub fn bark() -> Texture {
         base * (plate_tone * noise)
     })
 }
+
+// ROCA natural (bajo las islas): sin ladrillos. Manchas de 4x4 px con tonos
+// distintos, grano fino, grietas oscuras diagonales y vetas de tierra.
+pub fn rock() -> Texture {
+    generate(|x, y| {
+        let base = Color::new(118.0, 108.0, 100.0);
+        let earth = Color::new(110.0, 82.0, 60.0);
+
+        // Grietas: dos familias de lineas diagonales que ondulan (los
+        // periodos de 32 px mantienen la textura sin costuras). Solo se
+        // dibujan en algunas celdas de 8x8 px, asi quedan tramos sueltos en
+        // vez de una rejilla regular.
+        let crack_a = (x + y + (3.0 * (y as f32 * TAU / 32.0).sin()) as i32).rem_euclid(16);
+        let crack_b = (x - 2 * y + (2.0 * (x as f32 * TAU / 32.0).sin()) as i32).rem_euclid(32);
+        let show_a = hash(x / 8, y / 8, 94) > 0.5;
+        let show_b = hash(x / 8, y / 8, 95) > 0.6;
+        if (crack_a == 0 && show_a) || (crack_b == 0 && show_b) {
+            return base * 0.5;
+        }
+
+        let patch = 0.8 + 0.3 * hash(x / 4, y / 4, 91);
+        let grain = 0.9 + 0.15 * hash(x, y, 92);
+        let color = base * (patch * grain);
+        // Vetas de tierra: algunas filas tiran a cafe.
+        if hash(0, y / 3, 93) > 0.75 {
+            mix(color, earth * grain, 0.5)
+        } else {
+            color
+        }
+    })
+}

@@ -37,6 +37,7 @@ pub struct Palette {
     pub grass: MaterialId,
     pub fire: MaterialId,
     pub bark: MaterialId,
+    pub rock: MaterialId,
 }
 
 impl Palette {
@@ -58,6 +59,7 @@ impl Palette {
             grass: register("grass", procedural::grass, Material::grass),
             fire: register("fire", procedural::fire, Material::fire),
             bark: register("bark", procedural::bark, Material::bark),
+            rock: register("rock", procedural::rock, Material::rock),
         }
     }
 }
@@ -221,25 +223,25 @@ fn floating_island(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (2.0, -0.4, 6.0), (6.0, 0.0, 6.8), p.grass);
 
     // Cuerpo de roca, escalonado hacia abajo.
-    add(o, (-6.6, -1.5, -5.6), (6.6, -0.4, 5.6), p.stone);
-    add(o, (-5.0, -2.5, -4.5), (5.0, -1.5, 4.5), p.stone);
-    add(o, (-3.5, -3.5, -3.0), (3.0, -2.5, 3.0), p.stone);
-    add(o, (-2.0, -4.5, -1.5), (1.5, -3.5, 2.0), p.stone);
-    add(o, (-0.8, -5.6, -0.5), (0.5, -4.5, 0.8), p.stone);
+    add(o, (-6.6, -1.5, -5.6), (6.6, -0.4, 5.6), p.rock);
+    add(o, (-5.0, -2.5, -4.5), (5.0, -1.5, 4.5), p.rock);
+    add(o, (-3.5, -3.5, -3.0), (3.0, -2.5, 3.0), p.rock);
+    add(o, (-2.0, -4.5, -1.5), (1.5, -3.5, 2.0), p.rock);
+    add(o, (-0.8, -5.6, -0.5), (0.5, -4.5, 0.8), p.rock);
 
     // Estalactitas colgando bajo cada capa.
-    add(o, (5.4, -2.3, 4.0), (6.0, -1.5, 4.8), p.stone);
-    add(o, (-6.0, -2.0, -3.0), (-5.4, -1.5, -2.2), p.stone);
-    add(o, (3.6, -3.3, -4.0), (4.2, -2.5, -3.4), p.stone);
-    add(o, (-4.6, -3.0, 2.8), (-4.0, -2.5, 3.4), p.stone);
-    add(o, (1.8, -4.2, 2.2), (2.4, -3.5, 2.8), p.stone);
+    add(o, (5.4, -2.3, 4.0), (6.0, -1.5, 4.8), p.rock);
+    add(o, (-6.0, -2.0, -3.0), (-5.4, -1.5, -2.2), p.rock);
+    add(o, (3.6, -3.3, -4.0), (4.2, -2.5, -3.4), p.rock);
+    add(o, (-4.6, -3.0, 2.8), (-4.0, -2.5, 3.4), p.rock);
+    add(o, (1.8, -4.2, 2.2), (2.4, -3.5, 2.8), p.rock);
 }
 
 // Rocas pequenas flotando alrededor (dan escala y profundidad).
 fn floating_rocks(o: &mut Vec<Cube>, p: &Palette) {
-    o.push(Cube::new(Vec3::new(-9.5, -0.8, 3.5), 0.8, p.stone));
-    o.push(Cube::new(Vec3::new(-8.8, 1.2, -5.0), 0.5, p.stone));
-    o.push(Cube::new(Vec3::new(8.2, 2.5, -5.2), 0.6, p.stone));
+    o.push(Cube::new(Vec3::new(-9.5, -0.8, 3.5), 0.8, p.rock));
+    o.push(Cube::new(Vec3::new(-8.8, 1.2, -5.0), 0.5, p.rock));
+    o.push(Cube::new(Vec3::new(8.2, 2.5, -5.2), 0.6, p.rock));
 }
 
 // Estanque elevado adelante a la izquierda: borde de piedra, fondo y agua,
@@ -391,8 +393,8 @@ fn bridge_and_satellite(o: &mut Vec<Cube>, p: &Palette) {
 
     // Isla satelite.
     add(o, (10.0, -0.4, -1.5), (13.0, 0.0, 2.0), p.grass);
-    add(o, (10.3, -1.4, -1.0), (12.7, -0.4, 1.5), p.stone);
-    add(o, (10.8, -2.3, -0.5), (12.2, -1.4, 1.0), p.stone);
+    add(o, (10.3, -1.4, -1.0), (12.7, -0.4, 1.5), p.rock);
+    add(o, (10.8, -2.3, -0.5), (12.2, -1.4, 1.0), p.rock);
 
     // Farol de metal: poste, base, nucleo encendido, 4 barrotes y techo.
     add(o, (11.4, 0.0, -0.9), (11.6, 1.8, -0.7), p.metal);
@@ -430,9 +432,9 @@ fn sky_shrine(o: &mut Vec<Cube>, p: &Palette) {
 
     // Isla alta detras del templo: pasto arriba y roca escalonada debajo.
     add(o, (-6.0, 5.2, -10.8), (-3.0, 5.6, -8.2), p.grass);
-    add(o, (-5.7, 4.4, -10.5), (-3.3, 5.2, -8.5), p.stone);
-    add(o, (-5.0, 3.6, -10.0), (-3.8, 4.4, -9.0), p.stone);
-    add(o, (-4.6, 3.0, -9.7), (-4.2, 3.6, -9.3), p.stone);
+    add(o, (-5.7, 4.4, -10.5), (-3.3, 5.2, -8.5), p.rock);
+    add(o, (-5.0, 3.6, -10.0), (-3.8, 4.4, -9.0), p.rock);
+    add(o, (-4.6, 3.0, -9.7), (-4.2, 3.6, -9.3), p.rock);
 
     // Obelisco: pedestal de piedra, cristal alto y remate de metal.
     add(o, (-4.9, 5.6, -9.9), (-4.1, 6.0, -9.1), p.stone);
