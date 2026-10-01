@@ -399,3 +399,38 @@ pub fn cloth() -> Texture {
         red * (weave * (0.94 + 0.1 * hash(x, y, 131)))
     })
 }
+
+// ESCAMAS de dragon: marfil con escamas en forma de arco, en hileras
+// desplazadas (como tejas), con borde oscuro abajo y brillo arriba.
+pub fn scales() -> Texture {
+    generate(|x, y| {
+        let row = y / 4;
+        let shifted_x = x + if row % 2 == 0 { 0 } else { 2 };
+        let (cx, cy) = (shifted_x.rem_euclid(4), y % 4);
+
+        let base = Color::new(235.0, 225.0, 200.0);
+        // Borde inferior de cada escama: un arco (mas bajo en el centro).
+        let arc = if cx == 0 || cx == 3 { 2 } else { 3 };
+        if cy == arc {
+            return base * 0.62;
+        }
+        let shine = if cy == 0 && (cx == 1 || cx == 2) { 1.1 } else { 1.0 };
+        let tone = 0.9 + 0.12 * hash(shifted_x.div_euclid(4), row, 141);
+        base * (shine * tone)
+    })
+}
+
+// MEMBRANA de ala: verde azulado que se aclara hacia un lado, con
+// nervaduras oscuras diagonales cada 8 px y bordes de hueso claros.
+pub fn wing() -> Texture {
+    generate(|x, y| {
+        let dark = Color::new(25.0, 110.0, 105.0);
+        let light = Color::new(110.0, 215.0, 190.0);
+
+        if (x + y / 2) % 8 == 0 {
+            return dark * 0.7; // nervadura
+        }
+        let t = (y as f32 / SIZE as f32 + 0.15 * (x as f32 * TAU / 32.0).sin()).clamp(0.0, 1.0);
+        mix(dark, light, t) * (0.94 + 0.1 * hash(x, y, 151))
+    })
+}

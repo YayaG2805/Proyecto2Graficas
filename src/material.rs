@@ -150,6 +150,40 @@ impl Material {
         Material { name: "Tela", specular: 0.2, shininess: 12.0, ..Material::grass(texture) }
     }
 
+    // Escamas de los dragones: marfil con brillo nacarado.
+    pub fn scales(texture: Texture) -> Self {
+        Material {
+            name: "Escamas",
+            texture,
+            albedo: Color::new(255.0, 250.0, 240.0),
+            specular: 0.5,
+            shininess: 32.0,
+            reflectivity: 0.08,
+            transparency: 0.0,
+            refractive_index: 1.0,
+            emission: 0.0,
+            ripple: 0.0,
+        }
+    }
+
+    // Membrana de las alas: delgada y translucida. Deja pasar parte de la
+    // luz sin desviarla (n = 1.0, como una hoja de papel) y tine de verde
+    // lo que se ve a traves, asi brilla a contraluz con el sol.
+    pub fn wing(texture: Texture) -> Self {
+        Material {
+            name: "Membrana",
+            texture,
+            albedo: Color::new(150.0, 255.0, 225.0),
+            specular: 0.3,
+            shininess: 16.0,
+            reflectivity: 0.0,
+            transparency: 0.35,
+            refractive_index: 1.0,
+            emission: 0.0,
+            ripple: 0.0,
+        }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", ..Material::stone(texture) }
