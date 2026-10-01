@@ -120,7 +120,12 @@ impl Material {
         }
     }
 
-    // ---- Material decorativo extra (no cuenta para la rubrica) ----
+    // ---- Materiales decorativos extra (no cuentan para la rubrica) ----
+
+    // Corteza de los troncos: mismos parametros que la madera, otra textura.
+    pub fn bark(texture: Texture) -> Self {
+        Material { name: "Corteza", ..Material::wood(texture) }
+    }
 
     // Pasto y hojas: mate, sin reflejo.
     pub fn grass(texture: Texture) -> Self {

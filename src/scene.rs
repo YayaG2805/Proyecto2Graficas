@@ -36,6 +36,7 @@ pub struct Palette {
     pub water: MaterialId,
     pub grass: MaterialId,
     pub fire: MaterialId,
+    pub bark: MaterialId,
 }
 
 impl Palette {
@@ -56,6 +57,7 @@ impl Palette {
             water: register("water", procedural::water, Material::water),
             grass: register("grass", procedural::grass, Material::grass),
             fire: register("fire", procedural::fire, Material::fire),
+            bark: register("bark", procedural::bark, Material::bark),
         }
     }
 }
@@ -513,14 +515,14 @@ fn vegetation(o: &mut Vec<Cube>, p: &Palette) {
     }
 }
 
-// Arboles voxel: tronco de madera y copa de bloques escalonados.
+// Arboles voxel: tronco con corteza y copa de bloques escalonados.
 fn trees(o: &mut Vec<Cube>, p: &Palette) {
-    add(o, (5.5, 0.0, 3.8), (5.9, 2.2, 4.2), p.wood);
+    add(o, (5.5, 0.0, 3.8), (5.9, 2.2, 4.2), p.bark);
     add(o, (4.7, 1.8, 3.0), (6.7, 2.8, 5.0), p.grass);
     add(o, (5.0, 2.8, 3.3), (6.4, 3.4, 4.7), p.grass);
     add(o, (5.3, 3.4, 3.6), (6.1, 3.8, 4.4), p.grass);
 
-    add(o, (-5.6, 0.0, -4.6), (-5.2, 1.8, -4.2), p.wood);
+    add(o, (-5.6, 0.0, -4.6), (-5.2, 1.8, -4.2), p.bark);
     add(o, (-6.3, 1.5, -5.3), (-4.5, 2.4, -3.5), p.grass);
     add(o, (-6.0, 2.4, -5.0), (-4.8, 2.9, -3.8), p.grass);
 }

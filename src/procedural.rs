@@ -254,3 +254,28 @@ pub fn fire() -> Texture {
         }
     })
 }
+
+// CORTEZA: surcos verticales oscuros (la v sigue el eje y, asi que en un
+// tronco quedan a lo largo de el), placas con tonos distintos y musgo verde
+// en algunos pixeles.
+pub fn bark() -> Texture {
+    generate(|x, y| {
+        let base = Color::new(95.0, 62.0, 38.0);
+
+        // Surcos: cada 4 px en x, ondulando un poco con y.
+        let wobble = ((y as f32 * TAU / 16.0).sin() * 0.8).round() as i32;
+        if (x + wobble).rem_euclid(4) == 0 {
+            return base * 0.55;
+        }
+
+        if hash(x, y / 2, 81) > 0.94 {
+            return Color::new(80.0, 105.0, 50.0); // musgo
+        }
+
+        // Placas: cada tira entre surcos se parte en tramos de 6 px de alto.
+        let strip = (x + wobble).div_euclid(4);
+        let plate_tone = 0.85 + 0.3 * hash(strip, y / 6, 82);
+        let noise = 0.92 + 0.12 * hash(x, y, 83);
+        base * (plate_tone * noise)
+    })
+}
