@@ -358,9 +358,10 @@ fn waterfall(o: &mut Vec<Cube>, p: &Palette) {
 // Templo: terraza, escalinata, estilobato, columnas (una rota), dinteles y
 // un frontón escalonado.
 fn temple(o: &mut Vec<Cube>, p: &Palette) {
-    // Terraza y estilobato (plataforma donde se apoyan las columnas).
+    // Terraza y estilobato (plataforma donde se apoyan las columnas). El
+    // estilobato es de marmol pulido: refleja las columnas y el cristal.
     add(o, (-4.0, 0.0, -5.0), (4.0, 1.0, -0.5), p.stone);
-    add(o, (-3.5, 1.0, -4.5), (3.5, 1.3, -1.0), p.stone);
+    add(o, (-3.5, 1.0, -4.5), (3.5, 1.3, -1.0), p.marble);
 
     // Escalinata de 3 escalones bajando hacia el frente (+z).
     add(o, (-1.5, 0.0, -0.5), (1.5, 0.33, 0.7), p.stone);
