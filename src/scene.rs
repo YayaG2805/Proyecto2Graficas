@@ -1,8 +1,8 @@
 use nalgebra_glm::{normalize, Vec3};
 
+use crate::bvh::Bvh;
 use crate::color::Color;
 use crate::cube::Cube;
-use crate::group::Group;
 use crate::light::Light;
 use crate::procedural;
 use crate::material::{Material, MaterialId};
@@ -74,42 +74,31 @@ fn add(objects: &mut Vec<Cube>, min: (f32, f32, f32), max: (f32, f32, f32), mate
     ));
 }
 
-// La escena completa: los materiales (cada caja los referencia por indice) y
-// una lista de grupos, cada uno con su caja envolvente.
+// La escena completa: los materiales (cada caja los referencia por indice),
+// todas las cajas organizadas en un BVH, las luces y el cielo.
 pub struct Scene {
     pub materials: Vec<Material>,
-    pub groups: Vec<Group>,
+    pub bvh: Bvh,
     pub lights: Vec<Light>,
     pub skybox: Skybox,
 }
 
 impl Scene {
     pub fn cube_count(&self) -> usize {
-        self.groups.iter().map(|g| g.cubes.len()).sum()
+        self.bvh.cubes.len()
     }
 
-    // Impacto mas cercano del rayo contra toda la escena.
+    // Impacto mas cercano del rayo contra toda la escena. El BVH solo nos
+    // entrega las cajas de las hojas que el rayo alcanza; cada impacto mas
+    // cercano reduce la distancia maxima, asi los nodos que quedan mas lejos
+    // ni se abren.
     pub fn closest_hit(&self, ray_origin: &Vec3, ray_direction: &Vec3) -> Intersect {
-        let mut zbuffer = f32::INFINITY;
         let mut closest: Option<&Cube> = None;
 
-        for group in &self.groups {
-            // Si el rayo no toca la envolvente, o la toca mas lejos que el
-            // impacto que ya tenemos, ninguna pieza del grupo puede ganar.
-            match group.entry_distance(ray_origin, ray_direction) {
-                Some(entry) if entry < zbuffer => {}
-                _ => continue,
-            }
-
-            for cube in &group.cubes {
-                if let Some(distance) = cube.hit_distance(ray_origin, ray_direction) {
-                    if distance < zbuffer {
-                        zbuffer = distance;
-                        closest = Some(cube);
-                    }
-                }
-            }
-        }
+        self.bvh.traverse(ray_origin, ray_direction, f32::INFINITY, |cube, distance| {
+            closest = Some(cube);
+            Some(distance) // nuevo zbuffer
+        });
 
         // Intersect completo (punto, normal, UV, material) solo para la ganadora.
         match closest {
@@ -121,37 +110,31 @@ impl Scene {
     // Rayo de sombra: que fraccion de la luz llega desde el origen hasta
     // max_distance (1.0 = toda, 0.0 = nada). Cada caja en el camino deja
     // pasar solo su `transparency`: la piedra (0) bloquea todo, el cristal
-    // (0.85) deja pasar casi todo y el fuego no bloquea nada. No importa cual caja es la mas cercana, asi
-    // que en cuanto algo opaco bloquea la luz se detiene (mas barato que
-    // closest_hit).
+    // (0.85) deja pasar casi todo y el fuego no bloquea nada. No importa cual
+    // caja es la mas cercana, asi que en cuanto algo opaco bloquea la luz el
+    // recorrido se detiene (mas barato que closest_hit).
     pub fn shadow_transmission(&self, ray_origin: &Vec3, ray_direction: &Vec3, max_distance: f32) -> f32 {
         let mut transmission = 1.0;
-        for group in &self.groups {
-            match group.entry_distance(ray_origin, ray_direction) {
-                Some(entry) if entry < max_distance => {}
-                _ => continue,
-            }
 
-            for cube in &group.cubes {
-                if let Some(distance) = cube.hit_distance(ray_origin, ray_direction) {
-                    let material = &self.materials[cube.material];
-                    // El fuego no da sombra: es la fuente de luz misma (la luz
-                    // del brasero esta junto a su llama).
-                    if distance < max_distance && material.emission <= 0.0 {
-                        transmission *= material.transparency;
-                        if transmission <= 0.0 {
-                            return 0.0;
-                        }
-                    }
+        self.bvh.traverse(ray_origin, ray_direction, max_distance, |cube, _| {
+            let material = &self.materials[cube.material];
+            // El fuego no da sombra: es la fuente de luz misma (la luz del
+            // brasero esta junto a su llama).
+            if material.emission <= 0.0 {
+                transmission *= material.transparency;
+                if transmission <= 0.0 {
+                    return None; // ya no llega luz: detener
                 }
             }
-        }
+            Some(max_distance) // se sigue buscando hasta la luz
+        });
+
         transmission
     }
 }
 
-// Cada funcion de construccion arma una parte del diorama; cada parte se
-// convierte en un grupo con su propia caja envolvente.
+// Cada funcion de construccion arma una parte del diorama (asi el codigo de
+// la escena queda organizado por zonas).
 type PartBuilder = fn(&mut Vec<Cube>, &Palette);
 
 pub fn build_scene() -> Scene {
@@ -176,20 +159,19 @@ pub fn build_scene() -> Scene {
         vegetation,
     ];
 
-    let groups = parts
-        .iter()
-        .map(|build_part| {
-            let mut cubes = Vec::new();
-            build_part(&mut cubes, &p);
-            Group::new(cubes)
-        })
-        .collect();
+    // Todas las partes aportan sus cajas a una sola lista; el BVH las
+    // organiza segun su posicion (no segun la parte a la que pertenecen).
+    let mut cubes = Vec::new();
+    for build_part in parts {
+        build_part(&mut cubes, &p);
+    }
+    let bvh = Bvh::new(cubes);
 
     let lights = build_lights();
     // El disco del sol del skybox apunta hacia la primera luz (el sol).
     let skybox = Skybox { sun_direction: normalize(&lights[0].position) };
 
-    Scene { materials, groups, lights, skybox }
+    Scene { materials, bvh, lights, skybox }
 }
 
 // Iluminacion: una luz principal calida y una de relleno fria (el contraste

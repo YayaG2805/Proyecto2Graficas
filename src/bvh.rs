@@ -47,29 +47,48 @@ impl Bvh {
         Bvh { nodes, cubes }
     }
 
-    // Recorre el arbol con una pila: cada nodo cuyo envolvente toca el rayo
-    // (antes de `max_distance`) se abre; en las hojas se llama a `visit` con
-    // cada caja. `visit` devuelve la nueva distancia maxima que importa (el
-    // impacto mas cercano hasta ahora), asi los nodos mas lejanos se
-    // descartan sin abrirlos; si devuelve None, el recorrido se detiene.
-    pub fn traverse(
-        &self,
+    pub fn node_count(&self) -> usize {
+        self.nodes.len()
+    }
+
+    // Distancia a la que el rayo entra a la envolvente del nodo (0 si el
+    // origen ya esta adentro), o None si no la toca.
+    fn entry_distance(&self, index: usize, ray_origin: &Vec3, ray_direction: &Vec3) -> Option<f32> {
+        let node = &self.nodes[index];
+        slab_intersect(&node.min, &node.max, ray_origin, ray_direction).map(|(tmin, _)| tmin.max(0.0))
+    }
+
+    // Recorre el arbol con una pila de (nodo, distancia de entrada). Solo se
+    // apilan los nodos cuya envolvente toca el rayo; en las hojas se llama a
+    // `visit` con cada caja golpeada. `visit` devuelve la nueva distancia
+    // maxima que importa (el impacto mas cercano hasta ahora), asi los nodos
+    // que quedan mas lejos se descartan sin abrirlos; si devuelve None, el
+    // recorrido se detiene.
+    //
+    // De los dos hijos se abre primero el mas cercano: si ahi hay un impacto,
+    // es probable que el hijo lejano quede detras y se descarte entero.
+    pub fn traverse<'a>(
+        &'a self,
         ray_origin: &Vec3,
         ray_direction: &Vec3,
         mut max_distance: f32,
-        mut visit: impl FnMut(&Cube, f32) -> Option<f32>,
+        mut visit: impl FnMut(&'a Cube, f32) -> Option<f32>,
     ) {
-        let mut stack = [0usize; STACK_SIZE];
-        let mut top = 1; // la raiz (indice 0) ya esta en la pila
+        let mut stack = [(0usize, 0.0f32); STACK_SIZE];
+        let mut top = 0;
+        if let Some(entry) = self.entry_distance(0, ray_origin, ray_direction) {
+            stack[0] = (0, entry);
+            top = 1;
+        }
 
         while top > 0 {
             top -= 1;
-            let node = &self.nodes[stack[top]];
-
-            match slab_intersect(&node.min, &node.max, ray_origin, ray_direction) {
-                Some((entry, _)) if entry.max(0.0) < max_distance => {}
-                _ => continue,
+            let (index, entry) = stack[top];
+            // Puede que desde que se apilo ya hayamos encontrado algo mas cerca.
+            if entry >= max_distance {
+                continue;
             }
+            let node = &self.nodes[index];
 
             if node.count > 0 {
                 for cube in &self.cubes[node.start..node.start + node.count] {
@@ -82,10 +101,24 @@ impl Bvh {
                         }
                     }
                 }
-            } else {
-                stack[top] = node.start;
-                stack[top + 1] = node.start + 1;
-                top += 2;
+                continue;
+            }
+
+            let left = (node.start, self.entry_distance(node.start, ray_origin, ray_direction));
+            let right = (node.start + 1, self.entry_distance(node.start + 1, ray_origin, ray_direction));
+            // La pila saca primero lo ultimo que entra: se apila primero el
+            // lejano y despues el cercano.
+            let (near, far) = match (left.1, right.1) {
+                (Some(l), Some(r)) if r < l => (right, left),
+                _ => (left, right),
+            };
+            for (child, child_entry) in [far, near] {
+                if let Some(child_entry) = child_entry {
+                    if child_entry < max_distance {
+                        stack[top] = (child, child_entry);
+                        top += 1;
+                    }
+                }
             }
         }
     }

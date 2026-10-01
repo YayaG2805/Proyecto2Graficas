@@ -179,7 +179,7 @@ fn main() {
     let window_height = 600;
 
     let scene = scene::build_scene();
-    println!("Escena: {} cajas en {} grupos", scene.cube_count(), scene.groups.len());
+    println!("Escena: {} cajas en un BVH de {} nodos", scene.cube_count(), scene.bvh.node_count());
     print_material_table(&scene);
 
     // Camara inicial: la vista "General" (tecla 1).
