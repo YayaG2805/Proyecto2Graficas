@@ -1,5 +1,6 @@
+use std::sync::Mutex;
+
 use nalgebra_glm::{dot, length, normalize, Vec3};
-use raylib::color::Color as RColor;
 
 use crate::camera::OrbitCamera;
 use crate::color::Color;
@@ -222,25 +223,31 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera
 
     // Render en paralelo con hilos de la libreria estandar (sin crates).
     // Cada pixel es independiente de los demas, asi que repartimos las filas
-    // entre los nucleos del CPU. El reparto es intercalado (hilo i toma las
-    // filas i, i+N, i+2N...) para que todos reciban una mezcla parecida de
-    // cielo (barato) y escena (caro) y terminen al mismo tiempo.
+    // entre los nucleos del CPU. El reparto es dinamico: las filas estan en
+    // una "cola" compartida y cada hilo, al terminar una, toma la siguiente
+    // libre. Asi los nucleos rapidos (o los que tocan filas de cielo, que son
+    // baratas) procesan mas filas y ninguno se queda esperando al final. En
+    // un CPU hibrido (nucleos de rendimiento + de eficiencia) un reparto fijo
+    // obligaria a todos a esperar a los nucleos lentos.
     let thread_count = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
     let row_width = framebuffer.width as usize;
 
-    let mut rows_per_thread: Vec<Vec<(usize, &mut [RColor])>> =
-        (0..thread_count).map(|_| Vec::new()).collect();
-    for (y, row) in framebuffer.pixels_mut().chunks_mut(row_width).enumerate() {
-        rows_per_thread[y % thread_count].push((y, row));
-    }
+    // El Mutex protege el iterador de filas: solo un hilo a la vez saca la
+    // siguiente. Se bloquea apenas un instante por fila (600 veces por cuadro).
+    let rows = Mutex::new(framebuffer.pixels_mut().chunks_mut(row_width).enumerate());
 
     // thread::scope garantiza que todos los hilos terminan antes de salir,
-    // por eso pueden usar referencias prestadas (scene, basis).
+    // por eso pueden usar referencias prestadas (scene, basis, rows).
     std::thread::scope(|scope| {
-        for rows in rows_per_thread {
+        for _ in 0..thread_count {
             let basis = &basis;
+            let rows = &rows;
             scope.spawn(move || {
-                for (y, row) in rows {
+                loop {
+                    // El candado se suelta al terminar esta linea.
+                    let next = rows.lock().unwrap().next();
+                    let Some((y, row)) = next else { break };
+
                     for (x, pixel) in row.iter_mut().enumerate() {
                         // Pixel -> espacio de pantalla [-1, 1] (y invertida porque en
                         // pantalla crece hacia abajo), con aspect ratio en x.
