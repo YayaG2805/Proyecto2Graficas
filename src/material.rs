@@ -206,6 +206,17 @@ impl Material {
         Material { name: "Flores", ..Material::grass(texture) }
     }
 
+    // Energia magica: orbes y nucleos que brillan cian con luz propia (como
+    // el fuego, pero frio). Reusa la textura del cristal.
+    pub fn magic(texture: Texture) -> Self {
+        Material {
+            name: "Magia",
+            albedo: Color::new(140.0, 245.0, 255.0),
+            emission: 1.25,
+            ..Material::fire(texture)
+        }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", ..Material::stone(texture) }

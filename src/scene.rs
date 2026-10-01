@@ -46,6 +46,7 @@ pub struct Palette {
     pub wing: MaterialId,
     pub tiles: MaterialId,
     pub flowers: MaterialId,
+    pub magic: MaterialId,
 }
 
 impl Palette {
@@ -75,6 +76,7 @@ impl Palette {
             wing: register("wing", procedural::wing, Material::wing),
             tiles: register("tiles", procedural::tiles, Material::tiles),
             flowers: register("flowers", procedural::flowers, Material::flowers),
+            magic: register("magic", procedural::glass, Material::magic),
         }
     }
 }
@@ -156,7 +158,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 22] = [
+    let parts: [PartBuilder; 23] = [
         floating_island,
         floating_rocks,
         pond,
@@ -175,6 +177,7 @@ pub fn build_scene() -> Scene {
         banners,
         stone_lanterns,
         flower_beds,
+        magic_orbs,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -215,6 +218,8 @@ fn build_lights() -> Vec<Light> {
         Light::point(Vec3::new(3.6, 2.3, -0.8), 1.4, Color::new(255.0, 150.0, 60.0), 4.0),
         // Farol de la isla satelite: mas amarillo y con algo mas de alcance.
         Light::point(Vec3::new(11.5, 2.04, -0.8), 1.3, Color::new(255.0, 190.0, 100.0), 4.5),
+        // Energia del cristal del altar: luz cian tenue que tine las columnas.
+        Light::point(Vec3::new(0.0, 3.15, -2.0), 0.7, Color::new(120.0, 230.0, 255.0), 3.5),
         // Linternas de piedra junto al portal (posiciones en STONE_LANTERNS).
         Light::point(lantern_light(STONE_LANTERNS[0]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
         Light::point(lantern_light(STONE_LANTERNS[1]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
@@ -398,6 +403,9 @@ fn altar_and_crystal(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-0.7, 2.2, -3.2), (0.7, 2.3, -2.2), p.metal);
 
     add(o, (-0.3, 2.6, -3.0), (0.3, 3.7, -2.4), p.glass);
+    // Nucleo de energia dentro del cristal: se ve a traves de el, deformado
+    // por la refraccion.
+    add(o, (-0.1, 3.0, -2.8), (0.1, 3.3, -2.6), p.magic);
 
     add(o, (-0.6, 3.05, -2.25), (0.6, 3.15, -2.15), p.metal);
     add(o, (-0.6, 3.05, -3.25), (0.6, 3.15, -3.15), p.metal);
@@ -838,5 +846,20 @@ fn flower_beds(o: &mut Vec<Cube>, p: &Palette) {
                 add(o, (x - size, *ground, z - size), (x + size, ground + height, z + size), p.flowers);
             }
         }
+    }
+}
+
+// Orbes de energia flotando en espiral alrededor del cristal del altar, a
+// distintas alturas y tamanos.
+fn magic_orbs(o: &mut Vec<Cube>, p: &Palette) {
+    let (cx, cy, cz) = (0.0, 3.15, -2.7);
+    for i in 0..8 {
+        let angle = i as f32 / 8.0 * std::f32::consts::TAU;
+        let radius = 0.95 + 0.15 * (i % 2) as f32;
+        let x = cx + angle.cos() * radius;
+        let z = cz + angle.sin() * radius;
+        let y = cy - 0.45 + 0.9 * (i as f32 / 8.0); // sube en espiral
+        let r = if i % 3 == 0 { 0.07 } else { 0.045 };
+        add(o, (x - r, y - r, z - r), (x + r, y + r, z + r), p.magic);
     }
 }
