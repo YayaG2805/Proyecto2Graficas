@@ -124,6 +124,26 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, auto_rotate:
     camera.update(dt)
 }
 
+// Panel de ayuda: controles y estado. Se oculta con H (para grabar el video).
+fn draw_help(d: &mut RaylibDrawHandle, render_ms: f32, auto_rotate: bool, preview_enabled: bool) {
+    let on_off = |value: bool| if value { "ON" } else { "OFF" };
+    let lines = [
+        format!("FPS: {}   render: {:.0} ms", d.get_fps(), render_ms),
+        "A/D, flechas o arrastrar: rotar".to_string(),
+        "W/S: inclinar   Q/E o rueda: zoom".to_string(),
+        "1-6: vistas   R: reiniciar".to_string(),
+        format!("Espacio: giro automatico [{}]", on_off(auto_rotate)),
+        format!("P: vista previa rapida [{}]", on_off(preview_enabled)),
+        "F12: captura   H: ocultar ayuda".to_string(),
+    ];
+
+    let line_height = 20;
+    d.draw_rectangle(6, 6, 330, line_height * lines.len() as i32 + 10, RColor::new(0, 0, 0, 150));
+    for (i, line) in lines.iter().enumerate() {
+        d.draw_text(line, 14, 12 + line_height * i as i32, 16, RColor::WHITE);
+    }
+}
+
 // Imprime los parametros de cada material al arrancar (evidencia de que cada
 // uno tiene su propia textura, albedo, specular, transparencia, etc.).
 fn print_material_table(scene: &Scene) {
@@ -225,6 +245,7 @@ fn main() {
     // P: con la vista previa apagada se renderiza siempre a resolucion
     // completa, aunque la camara se mueva (mas lento, pero mejor para grabar).
     let mut preview_enabled = true;
+    let mut show_help = true;
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time();
@@ -235,6 +256,9 @@ fn main() {
         }
         if rl.is_key_pressed(KeyboardKey::KEY_P) {
             preview_enabled = !preview_enabled;
+        }
+        if rl.is_key_pressed(KeyboardKey::KEY_H) {
+            show_help = !show_help;
         }
 
         let start = std::time::Instant::now();
@@ -276,7 +300,8 @@ fn main() {
         } else {
             d.draw_texture(&screen_texture, 0, 0, RColor::WHITE);
         }
-        d.draw_fps(10, 10);
-        d.draw_text(&format!("render: {:.0} ms", render_ms), 10, 32, 20, RColor::WHITE);
+        if show_help {
+            draw_help(&mut d, render_ms, auto_rotate, preview_enabled);
+        }
     }
 }
