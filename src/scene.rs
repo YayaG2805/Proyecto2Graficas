@@ -544,13 +544,15 @@ fn under_crystals(o: &mut Vec<Cube>, p: &Palette) {
 // Detalles del patio: camino de losas, cajas de madera y un andamio junto a
 // la columna rota.
 fn props(o: &mut Vec<Cube>, p: &Palette) {
-    // Camino de losas desde la escalinata hasta el puente.
+    // Plazoleta empedrada al pie de la escalinata.
+    add(o, (-1.6, 0.0, 0.7), (1.6, 0.03, 1.7), p.cobble);
+    // Camino empedrado desde la escalinata hasta el puente.
     for (x, z) in [(1.9, 1.0), (3.1, 0.7), (4.3, 0.8), (5.5, 0.55), (6.5, 0.6)] {
-        add(o, (x - 0.4, 0.0, z - 0.35), (x + 0.4, 0.05, z + 0.35), p.stone);
+        add(o, (x - 0.4, 0.0, z - 0.35), (x + 0.4, 0.05, z + 0.35), p.cobble);
     }
     // Camino hacia el estanque.
     for (x, z) in [(-1.0, 1.0), (-0.6, 2.2)] {
-        add(o, (x - 0.35, 0.0, z - 0.35), (x + 0.35, 0.05, z + 0.35), p.stone);
+        add(o, (x - 0.35, 0.0, z - 0.35), (x + 0.35, 0.05, z + 0.35), p.cobble);
     }
 
     // Cajas apiladas.
