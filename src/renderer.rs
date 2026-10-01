@@ -8,10 +8,18 @@ use crate::framebuffer::Framebuffer;
 use crate::postprocess::tone_map;
 use crate::scene::Scene;
 
-// Luz ambiental: la luz indirecta que llega desde todo el cielo. Tenida de
-// azul (como el cielo) para que las sombras se vean frias y contrasten con
-// el sol calido. Se multiplica por el color base (Color * Color / 255).
-const AMBIENT_LIGHT: Color = Color { r: 60.0, g: 70.0, b: 100.0 };
+// Luz ambiental hemisferica: la luz indirecta depende de hacia donde mira la
+// superficie. Las caras que miran arriba reciben el azul del cielo (sombras
+// frias que contrastan con el sol calido); las que miran abajo, la luz rosada
+// que rebota en el mar de nubes iluminado por el atardecer. Las caras
+// laterales reciben una mezcla. Se multiplica por el color base.
+const AMBIENT_SKY: Color = Color { r: 60.0, g: 70.0, b: 100.0 };
+const AMBIENT_GROUND: Color = Color { r: 135.0, g: 98.0, b: 130.0 };
+
+fn ambient_light(normal: &Vec3) -> Color {
+    let up = (normal.y + 1.0) * 0.5; // 1 mirando arriba, 0 mirando abajo
+    AMBIENT_GROUND * (1.0 - up) + AMBIENT_SKY * up
+}
 
 // Separacion del origen de los rayos secundarios (sombra, reflexion,
 // refraccion) respecto a la superficie, para no volver a chocar con la
@@ -107,7 +115,7 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
     // Color propio de la superficie (ambiente + difuso) y brillo especular
     // se acumulan por separado: el especular es luz reflejada, asi que no se
     // atenua con la reflectividad mas abajo.
-    let mut surface = base_color * AMBIENT_LIGHT;
+    let mut surface = base_color * ambient_light(&normal);
     let mut specular = Color::new(0.0, 0.0, 0.0);
 
     // Cada luz suma su aporte difuso y especular.
