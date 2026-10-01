@@ -42,6 +42,10 @@ const CLOUD_COLOR: Color = Color { r: 255.0, g: 205.0, b: 200.0 };
 const FAR_MOUNTAINS: Color = Color { r: 185.0, g: 125.0, b: 160.0 };
 const NEAR_MOUNTAINS: Color = Color { r: 105.0, g: 70.0, b: 120.0 };
 
+// Nubes altas: cara iluminada por el sol del atardecer y base en sombra.
+const HIGH_CLOUD_LIT: Color = Color { r: 255.0, g: 195.0, b: 165.0 };
+const HIGH_CLOUD_SHADE: Color = Color { r: 140.0, g: 85.0, b: 135.0 };
+
 const SUN_COLOR: Color = Color { r: 255.0, g: 245.0, b: 220.0 };
 const SUN_GLOW: Color = Color { r: 255.0, g: 190.0, b: 130.0 };
 
@@ -98,6 +102,31 @@ impl Skybox {
                 let fade = ((elevation - 0.25) / 0.35).min(1.0);
                 let brightness = 0.5 + 0.5 * hash(cell_x, cell_y, 72);
                 color = mix(color, Color::new(255.0, 250.0, 240.0), fade * brightness);
+            }
+        }
+
+        // Nubes sobre el horizonte: igual que el mar de nubes, la direccion
+        // se proyecta sobre un plano (ahora arriba) y ahi se evalua el ruido.
+        // Para sombrearlas se vuelve a leer el ruido un poco mas hacia el sol:
+        // si ahi hay mas nube, este punto queda "detras" y en sombra; si hay
+        // menos, es el borde que mira al sol y se ilumina.
+        if elevation > 0.02 {
+            let plane_x = direction.x / elevation;
+            let plane_z = direction.z / elevation;
+            let density = fractal_noise(plane_x * 0.45 + 10.0, plane_z * 0.45, 301);
+            let cloud = ((density - 0.5) / 0.2).clamp(0.0, 1.0);
+            if cloud > 0.0 {
+                let toward_sun = fractal_noise(
+                    (plane_x + self.sun_direction.x * 0.6) * 0.45 + 10.0,
+                    (plane_z + self.sun_direction.z * 0.6) * 0.45,
+                    301,
+                );
+                let light = (0.6 + (density - toward_sun) * 4.0).clamp(0.0, 1.0);
+                let shade = mix(HIGH_CLOUD_SHADE, HIGH_CLOUD_LIT, light);
+                // Se desvanecen al subir (cerca del cenit el cielo esta
+                // despejado y se ven las estrellas) y muy cerca del horizonte.
+                let band = ((elevation - 0.02) / 0.06).min(1.0) * (1.0 - ((elevation - 0.2) / 0.35).clamp(0.0, 1.0));
+                color = mix(color, shade, cloud * band * 0.9);
             }
         }
 
