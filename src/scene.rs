@@ -38,6 +38,7 @@ pub struct Palette {
     pub fire: MaterialId,
     pub bark: MaterialId,
     pub rock: MaterialId,
+    pub leaves: MaterialId,
 }
 
 impl Palette {
@@ -60,6 +61,7 @@ impl Palette {
             fire: register("fire", procedural::fire, Material::fire),
             bark: register("bark", procedural::bark, Material::bark),
             rock: register("rock", procedural::rock, Material::rock),
+            leaves: register("leaves", procedural::leaves, Material::leaves),
         }
     }
 }
@@ -424,7 +426,7 @@ fn sky_shrine(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-4.8, 7.5, -9.8), (-4.2, 7.6, -9.2), p.metal);
 
     // Arbusto al lado del obelisco.
-    add(o, (-3.7, 5.6, -8.9), (-3.2, 6.0, -8.4), p.grass);
+    add(o, (-3.7, 5.6, -8.9), (-3.2, 6.0, -8.4), p.leaves);
 }
 
 // Cristales creciendo hacia abajo bajo la isla principal.
@@ -487,7 +489,7 @@ fn vegetation(o: &mut Vec<Cube>, p: &Palette) {
         ((10.3, 0.0, 1.3), (10.8, 0.4, 1.8)),
     ];
     for (min, max) in bushes {
-        add(o, min, max, p.grass);
+        add(o, min, max, p.leaves);
     }
 
     // Enredaderas: tiras delgadas bajo el borde del pasto.
@@ -502,11 +504,11 @@ fn vegetation(o: &mut Vec<Cube>, p: &Palette) {
 // Arboles voxel: tronco con corteza y copa de bloques escalonados.
 fn trees(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (5.5, 0.0, 3.8), (5.9, 2.2, 4.2), p.bark);
-    add(o, (4.7, 1.8, 3.0), (6.7, 2.8, 5.0), p.grass);
-    add(o, (5.0, 2.8, 3.3), (6.4, 3.4, 4.7), p.grass);
-    add(o, (5.3, 3.4, 3.6), (6.1, 3.8, 4.4), p.grass);
+    add(o, (4.7, 1.8, 3.0), (6.7, 2.8, 5.0), p.leaves);
+    add(o, (5.0, 2.8, 3.3), (6.4, 3.4, 4.7), p.leaves);
+    add(o, (5.3, 3.4, 3.6), (6.1, 3.8, 4.4), p.leaves);
 
     add(o, (-5.6, 0.0, -4.6), (-5.2, 1.8, -4.2), p.bark);
-    add(o, (-6.3, 1.5, -5.3), (-4.5, 2.4, -3.5), p.grass);
-    add(o, (-6.0, 2.4, -5.0), (-4.8, 2.9, -3.8), p.grass);
+    add(o, (-6.3, 1.5, -5.3), (-4.5, 2.4, -3.5), p.leaves);
+    add(o, (-6.0, 2.4, -5.0), (-4.8, 2.9, -3.8), p.leaves);
 }

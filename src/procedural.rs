@@ -310,3 +310,31 @@ pub fn rock() -> Texture {
         }
     })
 }
+
+// HOJAS (copas de arboles y arbustos): racimos de 4x4 px desplazados en
+// hileras, cada uno con luz arriba a la izquierda y sombra abajo a la
+// derecha, y huecos oscuros entre racimos que dan volumen.
+pub fn leaves() -> Texture {
+    generate(|x, y| {
+        let row = y / 4;
+        let shifted_x = x + if row % 2 == 0 { 0 } else { 2 };
+        let (cx, cy) = (shifted_x.rem_euclid(4), y % 4);
+        let cluster = (shifted_x.div_euclid(4), row);
+
+        let base = Color::new(60.0, 120.0, 50.0);
+        if hash(cluster.0, cluster.1, 101) > 0.85 && cx == 3 && cy == 3 {
+            return base * 0.45; // hueco entre racimos
+        }
+
+        let tone = 0.8 + 0.35 * hash(cluster.0, cluster.1, 102);
+        let shade = if cx + cy <= 1 {
+            1.25 // borde iluminado
+        } else if cx + cy >= 5 {
+            0.75 // borde en sombra
+        } else {
+            1.0
+        };
+        let noise = 0.92 + 0.12 * hash(x, y, 103);
+        base * (tone * shade * noise)
+    })
+}

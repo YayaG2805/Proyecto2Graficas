@@ -135,6 +135,11 @@ impl Material {
         Material { name: "Corteza", ..Material::wood(texture) }
     }
 
+    // Hojas de las copas y arbustos: mate como el pasto, con otra textura.
+    pub fn leaves(texture: Texture) -> Self {
+        Material { name: "Hojas", ..Material::grass(texture) }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", ..Material::stone(texture) }
