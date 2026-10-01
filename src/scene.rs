@@ -40,6 +40,7 @@ pub struct Palette {
     pub rock: MaterialId,
     pub leaves: MaterialId,
     pub blossom: MaterialId,
+    pub cloth: MaterialId,
 }
 
 impl Palette {
@@ -64,6 +65,7 @@ impl Palette {
             rock: register("rock", procedural::rock, Material::rock),
             leaves: register("leaves", procedural::leaves, Material::leaves),
             blossom: register("blossom", procedural::blossom, Material::blossom),
+            cloth: register("cloth", procedural::cloth, Material::cloth),
         }
     }
 }
@@ -145,7 +147,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 16] = [
+    let parts: [PartBuilder; 17] = [
         floating_island,
         floating_rocks,
         pond,
@@ -161,6 +163,7 @@ pub fn build_scene() -> Scene {
         ruined_walls,
         trees,
         cherry_tree,
+        banners,
         vegetation,
     ];
 
@@ -589,4 +592,24 @@ fn cherry_tree(o: &mut Vec<Cube>, p: &Palette) {
         let z = 2.8 + 2.0 * procedural::hash(i, 4, 125);
         add(o, (x, y, z), (x + 0.06, y + 0.06, z + 0.06), p.blossom);
     }
+}
+
+// Estandartes rojos colgando del dintel frontal del templo, con una barra de
+// metal arriba y la punta cortada en "V" (dos tiras al final), y una bandera
+// en un mastil sobre la isla alta.
+fn banners(o: &mut Vec<Cube>, p: &Palette) {
+    for x in [-1.75, 1.15] {
+        let z0 = -1.29; // apenas delante de la cara del dintel (z = -1.3)
+        add(o, (x - 0.05, 4.45, z0), (x + 0.65, 4.55, z0 + 0.06), p.metal); // barra
+        add(o, (x, 3.35, z0), (x + 0.6, 4.45, z0 + 0.03), p.cloth);
+        add(o, (x, 3.15, z0), (x + 0.22, 3.35, z0 + 0.03), p.cloth); // punta izq
+        add(o, (x + 0.38, 3.15, z0), (x + 0.6, 3.35, z0 + 0.03), p.cloth); // punta der
+    }
+
+    // Mastil con bandera en la isla alta, ondeando hacia +x.
+    add(o, (-3.55, 5.6, -10.5), (-3.45, 7.9, -10.4), p.wood);
+    add(o, (-3.58, 7.9, -10.53), (-3.42, 8.0, -10.37), p.metal);
+    add(o, (-3.45, 7.3, -10.47), (-2.9, 7.8, -10.43), p.cloth);
+    add(o, (-2.9, 7.25, -10.47), (-2.4, 7.72, -10.43), p.cloth);
+    add(o, (-2.4, 7.3, -10.47), (-2.05, 7.65, -10.43), p.cloth);
 }

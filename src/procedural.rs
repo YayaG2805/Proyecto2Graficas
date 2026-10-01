@@ -368,3 +368,34 @@ pub fn blossom() -> Texture {
         base * (tone * shade)
     })
 }
+
+// TELA de los estandartes: rojo profundo con trama de hilos, franjas
+// doradas cada 16 px y un rombo dorado entre las franjas.
+pub fn cloth() -> Texture {
+    generate(|x, y| {
+        let red = Color::new(170.0, 30.0, 40.0);
+        let gold = Color::new(230.0, 180.0, 70.0);
+
+        let band = y % 16;
+        if band == 0 || band == 2 {
+            return gold;
+        }
+        if band == 1 {
+            return gold * 0.7;
+        }
+
+        // Rombo: |dx| + |dy| pequeno alrededor del centro de cada tramo.
+        let dx = ((x % 16) - 8).abs();
+        let dy = (band - 9).abs();
+        if dx + dy == 3 {
+            return gold;
+        }
+        if dx + dy < 3 {
+            return red * 1.2;
+        }
+
+        // Trama: hilos verticales y horizontales alternados.
+        let weave = if (x + y) % 2 == 0 { 1.05 } else { 0.92 };
+        red * (weave * (0.94 + 0.1 * hash(x, y, 131)))
+    })
+}

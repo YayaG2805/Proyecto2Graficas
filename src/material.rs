@@ -145,6 +145,11 @@ impl Material {
         Material { name: "Cerezo", specular: 0.15, shininess: 8.0, ..Material::grass(texture) }
     }
 
+    // Tela de los estandartes: mate, con un leve brillo de seda.
+    pub fn cloth(texture: Texture) -> Self {
+        Material { name: "Tela", specular: 0.2, shininess: 12.0, ..Material::grass(texture) }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", ..Material::stone(texture) }
