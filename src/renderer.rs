@@ -5,7 +5,7 @@ use nalgebra_glm::{dot, length, normalize, Vec3};
 use crate::camera::OrbitCamera;
 use crate::color::Color;
 use crate::framebuffer::Framebuffer;
-use crate::postprocess::tone_map;
+use crate::postprocess::{tone_map, vignette};
 use crate::scene::Scene;
 
 // Luz ambiental hemisferica: la luz indirecta depende de hacia donde mira la
@@ -283,7 +283,8 @@ pub fn render(framebuffer: &mut Framebuffer, scene: &Scene, camera: &OrbitCamera
                         let ray_direction = basis.ray_direction(screen_x, screen_y);
                         let pixel_color = cast_ray(&basis.eye, &ray_direction, scene, 0, 1.0);
 
-                        *pixel = tone_map(pixel_color).to_raylib();
+                        let ndc_x = (2.0 * x as f32) / width - 1.0;
+                        *pixel = vignette(tone_map(pixel_color), ndc_x, screen_y).to_raylib();
                     }
                 }
             });
