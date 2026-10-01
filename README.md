@@ -1,8 +1,10 @@
 # Proyecto 2 — Raytracing: Santuario flotante
 
 Raytracer en Rust que renderiza en tiempo real un diorama voxel: un santuario
-en ruinas sobre una isla flotante, al atardecer, sobre un mar de nubes.
-Todo se calcula en el CPU, sin GPU ni shaders.
+en ruinas sobre una isla flotante, al atardecer, sobre un mar de nubes, con
+una pagoda en una isla vecina, un cerezo en flor y tres dragones volando
+alrededor. Todo se calcula en el CPU, sin GPU ni shaders: 836 cajas, 17
+materiales y 8 luces.
 
 ![Vista general del santuario](docs/vista_general.png)
 
@@ -51,8 +53,8 @@ cargo run -- --bench
 
 | Requisito | Dónde se ve | Implementación |
 |---|---|---|
-| Complejidad de la escena | Toda la escena: 176 cajas | `scene.rs`, una función por zona del diorama |
-| Atractivo visual | Atardecer, contraste de luz cálida y fría, fuego | `scene.rs: build_lights`, `skybox.rs` |
+| Complejidad de la escena | 836 cajas: templo, pagoda, cerezo, fuente, puentes, dragones, islotes | `scene.rs` (una función por zona), `dragon.rs` |
+| Atractivo visual | Atardecer, luz cálida y fría, fuego, magia, bruma, antialiasing | `scene.rs: build_lights`, `skybox.rs`, `postprocess.rs` |
 | Rotación y zoom de la cámara | Teclado, mouse y vistas 1–6 | `camera.rs: OrbitCamera` |
 | 5 materiales con textura, albedo, specular, transparencia y reflectividad | Piedra, madera, metal, cristal y agua | `material.rs`, `procedural.rs` |
 | Refracción | Cristal del altar, obelisco y agua del estanque | `renderer.rs: refract` (ley de Snell) |
@@ -73,10 +75,20 @@ parámetros que definen cómo responde a la luz:
 | **Cristal** | 225, 245, 255 | 1.00 | 256 | 0.10 | 0.85 | 1.50 |
 | **Agua** | 170, 215, 255 | 0.70 | 64 | 0.30 | 0.50 | 1.33 |
 
-Además hay materiales decorativos que no cuentan para la rúbrica:
-**pasto**, **fuego** (emisivo, brilla con luz propia), **corteza** y
-**roca natural**. Los dos últimos usan los parámetros de la madera y la
-piedra con otra textura.
+Además hay 12 materiales decorativos (no cuentan para la rúbrica), cada uno
+con su propia textura procedural:
+
+| Material | Dónde | Detalle |
+|---|---|---|
+| Pasto, Hojas, Flores | Suelo, copas, macizos | Mates |
+| Corteza, Roca | Troncos, base de las islas | Parámetros de madera y piedra, otra textura |
+| Cerezo | Copa del cerezo y pétalos | Rosado con pétalos claros |
+| Tela | Estandartes y bandera | Rojo con franjas y rombos dorados |
+| Tejas | Techos de la pagoda | Cerámica vidriada: specular 0.6, reflectividad 0.12 |
+| Escamas | Cuerpo de los dragones | Marfil nacarado: specular 0.5, reflectividad 0.08 |
+| Membrana | Alas de los dragones | Translúcida (transparencia 0.35, n = 1.0): brilla a contraluz |
+| Fuego | Braseros, linternas, ventanas, ojos de dragón | Emisivo: brilla con luz propia y no da sombra |
+| Magia | Núcleos de cristal y orbes | Emisivo cian |
 
 La luz que llega a una superficie se reparte así: `reflectividad` se refleja
 como espejo, `transparencia` atraviesa el material y el resto se ve con el
@@ -89,7 +101,9 @@ color propio (textura × albedo, iluminada con Lambert y Phong).
 | ![Altar y cristal](docs/altar_cristal.png) **Altar y cristal:** refracción en el cristal y reflejo en el marco de metal | ![Estanque](docs/estanque.png) **Estanque:** el agua refracta el fondo y refleja el cielo según el ángulo (Fresnel) |
 | ![Contraluz](docs/contraluz.png) **Contraluz:** el sol del skybox detrás del templo | ![Obelisco](docs/obelisco.png) **Obelisco:** cristal alto sobre la isla del santuario |
 | ![Braseros](docs/braseros.png) **Braseros:** llamas emisivas con luz puntual cálida | ![Farol](docs/farol.png) **Farol:** núcleo de fuego que ilumina su isla |
-| ![Desde abajo](docs/desde_abajo.png) **Desde abajo:** roca natural y cristales bajo la isla | ![Vista general](docs/vista_general.png) **Vista general** |
+| ![Desde abajo](docs/desde_abajo.png) **Desde abajo:** roca natural iluminada por el rebote de las nubes | ![Dragón](docs/dragon.png) **Dragón:** escamas de marfil, alas de membrana translúcida y ojos de fuego |
+| ![Pagoda](docs/pagoda.png) **Pagoda:** tejas vidriadas, ventanas encendidas y puente colgante | ![Cerezo](docs/cerezo.png) **Cerezo:** copa irregular y pétalos en el suelo y en el aire |
+| ![Cristales](docs/cristales.png) **Islote de cristales:** núcleos mágicos vistos a través del vidrio | ![Linternas](docs/linternas.png) **Linternas de piedra:** luz puntual cálida junto al portal |
 
 ## Cómo funciona
 
@@ -97,11 +111,14 @@ Por cada píxel se lanza un rayo desde la cámara (`renderer.rs: render`) y se
 busca la caja más cercana que toca (`scene.rs: closest_hit`). En el punto
 de impacto, `cast_ray` calcula:
 
-1. **Color propio:** textura × albedo, con luz ambiental tenida de azul.
+1. **Color propio:** textura × albedo, con luz ambiental **hemisférica**:
+   las caras que miran arriba reciben el azul del cielo y las que miran
+   abajo, el rebote rosado del mar de nubes.
 2. **Luces:** para cada luz, difuso de Lambert (`N·L`) y brillo especular de
-   Phong (`(R·V)^shininess`). Hay cuatro luces: el sol cálido, un relleno
-   frío y luces puntuales en los braseros y el farol. Las puntuales se
-   atenúan con `(1 - (d/r)²)²` y no alumbran más allá de su alcance `r`.
+   Phong (`(R·V)^shininess`). Hay ocho luces: el sol cálido, un relleno frío
+   y seis puntuales (braseros, farol, linternas de piedra y la energía cian
+   del altar). Las puntuales se atenúan con `(1 - (d/r)²)²` y no alumbran
+   más allá de su alcance `r`.
 3. **Sombras:** un rayo hacia cada luz. Si choca con algo antes de llegar,
    pasa solo la fracción que deja pasar ese objeto: nada a través de la
    piedra, casi todo a través del cristal. El origen se desplaza un poco
@@ -119,16 +136,37 @@ de impacto, `cast_ray` calcula:
 
 Los rebotes son recursivos, con un máximo de 4 (`MAX_DEPTH`).
 
+Detalles extra de calidad:
+
+- **Ondas en el agua:** la normal se inclina con una suma de senos según la
+  posición (como un *normal map* calculado), así el reflejo y la refracción
+  ondulan.
+- **Bruma de distancia:** lo lejano se funde con el color del cielo
+  (`1 - e^(-densidad·d)`), lo que da profundidad.
+- **Post-proceso** (`postprocess.rs`): *tone mapping* con rodilla suave, que
+  comprime las luces muy brillantes en vez de cortarlas en blanco, y una
+  viñeta sutil.
+- **Antialiasing:** con la cámara quieta, cada píxel promedia 4 rayos en una
+  grilla rotada, y los bordes de las cajas quedan suaves.
+- **Dragones en coordenadas locales** (`dragon.rs`): el modelo se describe
+  con adelante, arriba y lado, y se coloca en cualquiera de las 4
+  direcciones y escalas. Así hay tres dragones con distintas poses y
+  rumbos, aunque las cajas no se puedan rotar.
+
 ## Rendimiento
 
 En un i7-12700H (20 hilos), a 800×600:
 
 | Vista | Tiempo por cuadro |
 |---|---|
-| General | ~18 ms |
-| Altar y cristal | ~52 ms |
-| Estanque | ~53 ms |
-| Contraluz, obelisco, desde abajo | ~16 ms |
+| General | ~33 ms |
+| Altar y cristal | ~81 ms |
+| Estanque | ~83 ms |
+| Contraluz, obelisco, desde abajo | ~22–25 ms |
+
+Esos tiempos son sin antialiasing, que es como se renderiza mientras la
+cámara se mueve. El cuadro quieto con antialiasing tarda unas 4 veces más,
+pero se calcula una sola vez.
 
 Optimizaciones, en el orden en que se hicieron (cada una está en su propio
 commit, con su medición):
@@ -151,7 +189,9 @@ commit, con su medición):
 |---|---|
 | `main.rs` | Ventana, controles, vistas predefinidas, modos `--screenshot` y `--bench` |
 | `camera.rs` | Cámara orbital con movimiento suavizado |
-| `renderer.rs` | `cast_ray` (iluminación, sombras, reflexión, refracción) y render en paralelo |
+| `renderer.rs` | `cast_ray` (iluminación, sombras, reflexión, refracción, ondas, bruma) y render en paralelo con antialiasing |
+| `postprocess.rs` | Tone mapping y viñeta |
+| `dragon.rs` | Modelo de dragón en coordenadas locales |
 | `scene.rs` | Construcción del diorama, luces, búsqueda de impactos y sombras |
 | `bvh.rs` | Jerarquía de cajas envolventes |
 | `cube.rs` | Caja alineada a los ejes: intersección por el método *slab*, normal y UV |
