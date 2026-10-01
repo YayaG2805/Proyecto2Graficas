@@ -158,7 +158,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 23] = [
+    let parts: [PartBuilder; 24] = [
         floating_island,
         floating_rocks,
         pond,
@@ -178,6 +178,7 @@ pub fn build_scene() -> Scene {
         stone_lanterns,
         flower_beds,
         magic_orbs,
+        overgrowth,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -861,5 +862,45 @@ fn magic_orbs(o: &mut Vec<Cube>, p: &Palette) {
         let y = cy - 0.45 + 0.9 * (i as f32 / 8.0); // sube en espiral
         let r = if i % 3 == 0 { 0.07 } else { 0.045 };
         add(o, (x - r, y - r, z - r), (x + r, y + r, z + r), p.magic);
+    }
+}
+
+// La naturaleza recuperando las ruinas: capas finas de musgo sobre las
+// piedras altas y enredaderas de hojas bajando por columnas y dinteles.
+fn overgrowth(o: &mut Vec<Cube>, p: &Palette) {
+    // Musgo: (x0, x1, y de la superficie, z0, z1).
+    let moss = [
+        (-3.1, -2.4, 5.0, -1.9, -1.3),  // extremo del dintel frontal
+        (2.5, 3.1, 5.0, -1.9, -1.3),
+        (-3.1, -1.6, 5.0, -4.2, -3.6),  // dintel trasero roto
+        (-2.9, -2.3, 5.0, -3.4, -2.2),  // dintel lateral
+        (2.35, 2.85, 3.1, -4.15, -3.65), // columna rota
+        (-6.8, -6.1, 1.5, -5.9, -5.5),  // muralla izquierda
+        (4.5, 5.6, 1.0, -5.9, -5.5),    // muralla derecha
+        (4.4, 5.1, 0.5, -3.2, -2.6),    // trozo caido
+    ];
+    for (x0, x1, y, z0, z1) in moss {
+        add(o, (x0, y, z0), (x1, y + 0.06, z1), p.grass);
+        // Un mechon que cuelga por el borde delantero.
+        add(o, (x0 + 0.1, y - 0.25, z1), (x0 + 0.22, y + 0.06, z1 + 0.04), p.grass);
+    }
+
+    // Enredaderas en la cara delantera de columnas (x, z de la columna,
+    // altura donde empieza, largo).
+    for (x, z, top, length) in [(-2.6, -1.6, 4.5, 2.2), (2.6, -1.6, 4.5, 1.4), (-2.6, -3.9, 4.5, 2.6)] {
+        let face = z + 0.25;
+        add(o, (x - 0.12, top - length, face), (x - 0.04, top, face + 0.04), p.leaves);
+        // Hojas sueltas a los lados del tallo.
+        for k in 0..((length / 0.35) as i32) {
+            let y = top - 0.2 - k as f32 * 0.35;
+            let dx = if k % 2 == 0 { 0.06 } else { -0.2 };
+            add(o, (x + dx - 0.06, y - 0.12, face), (x + dx + 0.08, y, face + 0.06), p.leaves);
+        }
+    }
+
+    // Enredaderas colgando del dintel frontal, entre los estandartes.
+    for (x, length) in [(-2.95, 0.9), (-0.35, 0.5), (0.25, 0.75), (2.85, 0.6)] {
+        add(o, (x, 4.55 - length, -1.3), (x + 0.1, 4.55, -1.26), p.leaves);
+        add(o, (x - 0.06, 4.55 - length - 0.12, -1.3), (x + 0.16, 4.55 - length, -1.25), p.leaves);
     }
 }
