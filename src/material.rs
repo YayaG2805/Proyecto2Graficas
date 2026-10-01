@@ -254,6 +254,58 @@ impl Material {
         }
     }
 
+    // Marmol pulido del piso del templo: liso y encerado, asi que refleja
+    // las columnas y el cielo, sobre todo al mirarlo de lado (Fresnel).
+    pub fn marble(texture: Texture) -> Self {
+        Material {
+            name: "Marmol",
+            texture,
+            albedo: Color::new(255.0, 252.0, 245.0),
+            specular: 0.6,
+            shininess: 64.0,
+            reflectivity: 0.18,
+            transparency: 0.0,
+            refractive_index: 1.0,
+            emission: 0.0,
+            ripple: 0.0,
+            fresnel: 0.8,
+            bump: 0.01,
+            metallic: false,
+        }
+    }
+
+    // Obsidiana: vidrio volcanico negro y pulido, casi un espejo oscuro. Su
+    // color propio es muy oscuro, asi que lo que se ve es sobre todo el
+    // reflejo del cielo y de la isla.
+    pub fn obsidian(texture: Texture) -> Self {
+        Material {
+            name: "Obsidiana",
+            reflectivity: 0.5,
+            specular: 1.0,
+            shininess: 220.0,
+            fresnel: 1.0,
+            bump: 0.0,
+            ..Material::marble(texture)
+        }
+    }
+
+    // Papel encendido: farolillos con una vela adentro. El papel deja pasar
+    // la luz y brilla con su propio color (emisivo); las varillas de bambu
+    // de la textura quedan como lineas oscuras.
+    pub fn paper(texture: Texture) -> Self {
+        Material { name: "Papel", albedo: Color::new(255.0, 200.0, 140.0), emission: 1.1, ..Material::fire(texture) }
+    }
+
+    // Empedrado de los caminos: piedra con relieve marcado entre las piedras.
+    pub fn cobble(texture: Texture) -> Self {
+        Material { name: "Empedrado", bump: 0.08, ..Material::stone(texture) }
+    }
+
+    // Peces koi: escamas humedas con brillo y un poco de reflejo.
+    pub fn koi(texture: Texture) -> Self {
+        Material { name: "Koi", specular: 0.6, shininess: 48.0, fresnel: 0.3, bump: 0.01, ..Material::scales(texture) }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", bump: 0.09, ..Material::stone(texture) }

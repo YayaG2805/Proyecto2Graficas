@@ -47,6 +47,11 @@ pub struct Palette {
     pub tiles: MaterialId,
     pub flowers: MaterialId,
     pub magic: MaterialId,
+    pub marble: MaterialId,
+    pub obsidian: MaterialId,
+    pub paper: MaterialId,
+    pub cobble: MaterialId,
+    pub koi: MaterialId,
 }
 
 impl Palette {
@@ -77,6 +82,11 @@ impl Palette {
             tiles: register("tiles", procedural::tiles, Material::tiles),
             flowers: register("flowers", procedural::flowers, Material::flowers),
             magic: register("magic", procedural::glass, Material::magic),
+            marble: register("marble", procedural::marble, Material::marble),
+            obsidian: register("obsidian", procedural::obsidian, Material::obsidian),
+            paper: register("paper", procedural::paper, Material::paper),
+            cobble: register("cobble", procedural::cobble, Material::cobble),
+            koi: register("koi", procedural::koi, Material::koi),
         }
     }
 }

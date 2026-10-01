@@ -519,10 +519,10 @@ pub fn marble() -> Texture {
         let base = Color::new(238.0, 232.0, 222.0);
         let vein = Color::new(120.0, 115.0, 125.0);
         // Ruido periodico de periodo 8 (32 px / 4): se repite sin costuras.
-        let turbulence = periodic_fractal(x as f32 / 4.0, y as f32 / 4.0, 8, 201) * 6.0;
+        let turbulence = periodic_fractal(x as f32 / 4.0, y as f32 / 4.0, 8, 201) * 3.0;
         let wave = ((x + y) as f32 * TAU / 32.0 + turbulence).sin();
         // Solo donde el seno pasa cerca de 0 hay veta: lineas delgadas.
-        let vein_strength = (1.0 - wave.abs() * 4.0).max(0.0);
+        let vein_strength = (1.0 - wave.abs() * 2.5).max(0.0);
         let tone = 0.96 + 0.06 * hash(x / 16, y / 16, 202); // cada losa distinta
         mix(base * tone, vein, vein_strength * 0.7)
     })
