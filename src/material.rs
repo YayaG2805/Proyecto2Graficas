@@ -201,6 +201,11 @@ impl Material {
         }
     }
 
+    // Flores de los macizos: mate como el pasto.
+    pub fn flowers(texture: Texture) -> Self {
+        Material { name: "Flores", ..Material::grass(texture) }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", ..Material::stone(texture) }

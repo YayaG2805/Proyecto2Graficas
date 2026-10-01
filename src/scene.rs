@@ -45,6 +45,7 @@ pub struct Palette {
     pub scales: MaterialId,
     pub wing: MaterialId,
     pub tiles: MaterialId,
+    pub flowers: MaterialId,
 }
 
 impl Palette {
@@ -73,6 +74,7 @@ impl Palette {
             scales: register("scales", procedural::scales, Material::scales),
             wing: register("wing", procedural::wing, Material::wing),
             tiles: register("tiles", procedural::tiles, Material::tiles),
+            flowers: register("flowers", procedural::flowers, Material::flowers),
         }
     }
 }
@@ -154,7 +156,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 21] = [
+    let parts: [PartBuilder; 22] = [
         floating_island,
         floating_rocks,
         pond,
@@ -172,6 +174,7 @@ pub fn build_scene() -> Scene {
         cherry_tree,
         banners,
         stone_lanterns,
+        flower_beds,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -803,5 +806,37 @@ fn stone_lanterns(o: &mut Vec<Cube>, p: &Palette) {
         add(o, (x - 0.3, 1.1, z - 0.3), (x + 0.3, 1.2, z + 0.3), p.stone); // techo
         add(o, (x - 0.18, 1.2, z - 0.18), (x + 0.18, 1.3, z + 0.18), p.stone);
         add(o, (x - 0.06, 1.3, z - 0.06), (x + 0.06, 1.42, z + 0.06), p.stone); // punta
+    }
+}
+
+// Macizos de flores: cada uno es un rectangulo (x0, z0, x1, z1) sobre el
+// pasto a la altura `ground`. Se recorre en una cuadricula de 0.3 y en la
+// mayoria de las celdas se pone una mata con tamano y altura "al azar"
+// (hash), asi el macizo se ve natural y no como una caja.
+fn flower_beds(o: &mut Vec<Cube>, p: &Palette) {
+    let beds = [
+        ((-4.6, 5.0, -1.6, 5.75), 0.0),   // frente del estanque
+        ((-1.1, 3.0, -0.3, 4.6), 0.0),    // junto al cerezo
+        ((9.7, -8.3, 10.6, -7.0), 0.7),   // isla de la pagoda
+        ((12.6, -8.3, 13.35, -5.5), 0.7), // isla de la pagoda
+        ((10.2, 0.2, 11.0, 1.2), 0.0),    // isla satelite
+        ((-5.9, -10.7, -5.1, -10.2), 5.6), // isla alta
+    ];
+    for (bed, ((x0, z0, x1, z1), ground)) in beds.iter().enumerate() {
+        let cols = ((x1 - x0) / 0.3) as i32;
+        let rows = ((z1 - z0) / 0.3) as i32;
+        for i in 0..cols {
+            for j in 0..rows {
+                let seed = bed as u32 * 7;
+                if procedural::hash(i, j, 181 + seed) < 0.3 {
+                    continue; // celda vacia
+                }
+                let size = 0.1 + 0.05 * procedural::hash(i, j, 182 + seed);
+                let height = 0.08 + 0.16 * procedural::hash(i, j, 183 + seed);
+                let x = x0 + 0.15 + i as f32 * 0.3;
+                let z = z0 + 0.15 + j as f32 * 0.3;
+                add(o, (x - size, *ground, z - size), (x + size, ground + height, z + size), p.flowers);
+            }
+        }
     }
 }

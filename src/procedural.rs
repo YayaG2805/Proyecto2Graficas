@@ -456,3 +456,25 @@ pub fn tiles() -> Texture {
         base * (curve * glaze)
     })
 }
+
+// FLORES: follaje oscuro con flores de 2x2 px de varios colores (rojo,
+// amarillo, blanco, lila) repartidas al azar, cada una con un centro claro.
+pub fn flowers() -> Texture {
+    const COLORS: [Color; 4] = [
+        Color { r: 225.0, g: 60.0, b: 70.0 },
+        Color { r: 245.0, g: 205.0, b: 70.0 },
+        Color { r: 240.0, g: 240.0, b: 235.0 },
+        Color { r: 175.0, g: 110.0, b: 220.0 },
+    ];
+    generate(|x, y| {
+        // Celdas de 4x4 px; en la mayoria hay una flor de 2x2 en su centro.
+        let (cell_x, cell_y) = (x / 4, y / 4);
+        let (lx, ly) = (x % 4, y % 4);
+        let has_flower = hash(cell_x, cell_y, 171) > 0.3;
+        if has_flower && (1..=2).contains(&lx) && (1..=2).contains(&ly) {
+            let color = COLORS[(hash(cell_x, cell_y, 172) * 4.0) as usize % 4];
+            return if lx == 1 && ly == 1 { color * 1.15 } else { color };
+        }
+        Color::new(55.0, 105.0, 45.0) * (0.85 + 0.25 * hash(x, y, 173))
+    })
+}
