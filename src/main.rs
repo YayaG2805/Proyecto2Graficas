@@ -2,6 +2,7 @@ mod bvh;
 mod camera;
 mod color;
 mod cube;
+mod dragon;
 mod framebuffer;
 mod light;
 mod material;

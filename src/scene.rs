@@ -3,6 +3,7 @@ use nalgebra_glm::{normalize, Vec3};
 use crate::bvh::Bvh;
 use crate::color::Color;
 use crate::cube::Cube;
+use crate::dragon::{dragon, Heading};
 use crate::light::Light;
 use crate::procedural;
 use crate::material::{Material, MaterialId};
@@ -41,6 +42,8 @@ pub struct Palette {
     pub leaves: MaterialId,
     pub blossom: MaterialId,
     pub cloth: MaterialId,
+    pub scales: MaterialId,
+    pub wing: MaterialId,
 }
 
 impl Palette {
@@ -66,6 +69,8 @@ impl Palette {
             leaves: register("leaves", procedural::leaves, Material::leaves),
             blossom: register("blossom", procedural::blossom, Material::blossom),
             cloth: register("cloth", procedural::cloth, Material::cloth),
+            scales: register("scales", procedural::scales, Material::scales),
+            wing: register("wing", procedural::wing, Material::wing),
         }
     }
 }
@@ -147,7 +152,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 17] = [
+    let parts: [PartBuilder; 18] = [
         floating_island,
         floating_rocks,
         pond,
@@ -164,6 +169,7 @@ pub fn build_scene() -> Scene {
         trees,
         cherry_tree,
         banners,
+        dragons,
         vegetation,
     ];
 
@@ -612,4 +618,13 @@ fn banners(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-3.45, 7.3, -10.47), (-2.9, 7.8, -10.43), p.cloth);
     add(o, (-2.9, 7.25, -10.47), (-2.4, 7.72, -10.43), p.cloth);
     add(o, (-2.4, 7.3, -10.47), (-2.05, 7.65, -10.43), p.cloth);
+}
+
+// Tres dragones rodeando la isla a distintas alturas, tamanos y poses: uno
+// grande aleteando sobre el templo, otro planeando por la derecha y uno mas
+// pequeno subiendo por la izquierda.
+fn dragons(o: &mut Vec<Cube>, p: &Palette) {
+    dragon(o, p, Vec3::new(-5.0, 8.5, -2.0), Heading::PlusX, 1.1, true);
+    dragon(o, p, Vec3::new(11.5, 5.0, -5.0), Heading::MinusZ, 0.9, false);
+    dragon(o, p, Vec3::new(-10.5, 2.5, 3.0), Heading::PlusZ, 0.7, true);
 }
