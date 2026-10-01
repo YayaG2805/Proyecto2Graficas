@@ -5,7 +5,9 @@ use nalgebra_glm::{dot, length, normalize, Vec3};
 use crate::camera::OrbitCamera;
 use crate::color::Color;
 use crate::framebuffer::Framebuffer;
+use crate::material::Material;
 use crate::postprocess::{tone_map, vignette};
+use crate::ray_intersect::Intersect;
 use crate::scene::Scene;
 
 // Luz ambiental hemisferica: la luz indirecta depende de hacia donde mira la
@@ -90,6 +92,23 @@ fn ripple_normal(normal: &Vec3, point: &Vec3, amplitude: f32) -> Vec3 {
     normalize(&(normal + tangent_wobble))
 }
 
+// Bump mapping: la textura se usa tambien como mapa de alturas. Con
+// diferencias finitas (altura un poco a la derecha menos un poco a la
+// izquierda) se obtiene la pendiente en u y en v; la normal se inclina en
+// contra de la pendiente, sobre la tangente y la bitangente de la cara. Asi
+// las juntas de la piedra o los surcos de la corteza reciben la luz como si
+// estuvieran hundidos, aunque la caja sea plana.
+fn bump_normal(intersect: &Intersect, material: &Material) -> Vec3 {
+    let texture = &material.texture;
+    let (u, v) = (intersect.u, intersect.v);
+    let e = texture.texel_size() * 0.5;
+    // Pendiente = cambio de altura / distancia recorrida (2e), escalada por
+    // la profundidad del relieve.
+    let slope_u = (texture.height(u + e, v) - texture.height(u - e, v)) / (2.0 * e) * material.bump;
+    let slope_v = (texture.height(u, v + e) - texture.height(u, v - e)) / (2.0 * e) * material.bump;
+    normalize(&(intersect.normal - intersect.tangent * slope_u - intersect.bitangent * slope_v))
+}
+
 // Origen de un rayo secundario: el punto desplazado un poco hacia el lado
 // de la superficie al que va el rayo (afuera si se refleja, adentro si se
 // refracta hacia el interior).
@@ -127,6 +146,8 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
 
     let normal = if material.ripple > 0.0 {
         ripple_normal(&intersect.normal, &intersect.point, material.ripple)
+    } else if material.bump > 0.0 {
+        bump_normal(&intersect, material)
     } else {
         intersect.normal
     };

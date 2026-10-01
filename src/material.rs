@@ -40,6 +40,10 @@ pub struct Material {
     // ras). Una superficie pulida (metal, ceramica) tiene mucho; una rugosa
     // (piedra, pasto) casi nada, porque su aspereza dispersa el reflejo.
     pub fresnel: f32,
+    // Bump mapping: profundidad del relieve de la textura, en unidades de
+    // mundo (0 = plana). La caja sigue siendo plana, pero la normal se
+    // inclina segun la pendiente del brillo de la textura.
+    pub bump: f32,
 }
 
 impl Material {
@@ -65,6 +69,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 0.0,
+            bump: 0.06,
         }
     }
 
@@ -82,6 +87,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 0.15,
+            bump: 0.024,
         }
     }
 
@@ -99,6 +105,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 1.0,
+            bump: 0.016,
         }
     }
 
@@ -117,6 +124,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 0.0,
+            bump: 0.0,
         }
     }
 
@@ -135,6 +143,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.12,
             fresnel: 0.0,
+            bump: 0.0,
         }
     }
 
@@ -142,12 +151,12 @@ impl Material {
 
     // Corteza de los troncos: mismos parametros que la madera, otra textura.
     pub fn bark(texture: Texture) -> Self {
-        Material { name: "Corteza", ..Material::wood(texture) }
+        Material { name: "Corteza", bump: 0.08, ..Material::wood(texture) }
     }
 
     // Hojas de las copas y arbustos: mate como el pasto, con otra textura.
     pub fn leaves(texture: Texture) -> Self {
-        Material { name: "Hojas", ..Material::grass(texture) }
+        Material { name: "Hojas", bump: 0.06, ..Material::grass(texture) }
     }
 
     // Flores del cerezo: mate, con un toque de brillo suave.
@@ -174,6 +183,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 0.4,
+            bump: 0.04,
         }
     }
 
@@ -193,6 +203,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 0.0,
+            bump: 0.0,
         }
     }
 
@@ -211,6 +222,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 0.7,
+            bump: 0.05,
         }
     }
 
@@ -232,7 +244,7 @@ impl Material {
 
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
-        Material { name: "Roca", ..Material::stone(texture) }
+        Material { name: "Roca", bump: 0.09, ..Material::stone(texture) }
     }
 
     // Pasto y hojas: mate, sin reflejo.
@@ -249,6 +261,7 @@ impl Material {
             emission: 0.0,
             ripple: 0.0,
             fresnel: 0.0,
+            bump: 0.03,
         }
     }
 
@@ -268,6 +281,7 @@ impl Material {
             emission: 1.3,
             ripple: 0.0,
             fresnel: 0.0,
+            bump: 0.0,
         }
     }
 }
