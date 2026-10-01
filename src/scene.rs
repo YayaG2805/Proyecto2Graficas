@@ -314,6 +314,36 @@ fn pond(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-3.45, 0.05, 2.75), (-2.95, 1.1, 3.25), p.stone); // pilar fuente
     add(o, (-3.6, 1.1, 2.6), (-2.8, 1.25, 3.4), p.metal); // cuenco
     fountain(o, p, -3.2, 3.0, 1.25);
+    pond_life(o, p);
+}
+
+// Vida en el estanque: peces koi nadando bajo el agua (se ven a traves de
+// ella, desviados por la refraccion) y nenufares flotando en la superficie,
+// algunos con flor. El agua llega hasta y = 0.45.
+fn pond_life(o: &mut Vec<Cube>, p: &Palette) {
+    // Koi: (x, y, z, nada hacia +x o -x). Cuerpo, cabeza mas angosta, cola
+    // abierta y aletas laterales.
+    for (x, y, z, dir) in [(-4.1, 0.34, 2.2, 1.0), (-2.3, 0.36, 3.9, -1.0), (-3.9, 0.3, 3.75, 1.0), (-2.2, 0.33, 2.15, -1.0)] {
+        let body = |a: f32, b: f32| (x + dir * a).min(x + dir * b)..(x + dir * a).max(x + dir * b);
+        let r = body(-0.2, 0.2);
+        add(o, (r.start, y - 0.05, z - 0.08), (r.end, y + 0.05, z + 0.08), p.koi);
+        let r = body(0.2, 0.32);
+        add(o, (r.start, y - 0.04, z - 0.055), (r.end, y + 0.04, z + 0.055), p.koi);
+        let r = body(-0.36, -0.2);
+        add(o, (r.start, y - 0.08, z - 0.02), (r.end, y + 0.08, z + 0.02), p.koi);
+        let r = body(0.0, 0.1);
+        add(o, (r.start, y - 0.01, z - 0.16), (r.end, y + 0.01, z + 0.16), p.koi);
+    }
+
+    // Nenufares: hojas finas sobre el agua (apenas encima, sin compartir la
+    // cara con ella) y una flor en algunos.
+    for (x, z, size, flower) in [(-4.45, 3.0, 0.22, true), (-1.95, 3.2, 0.18, false), (-4.5, 1.95, 0.15, false), (-2.9, 4.1, 0.2, true), (-3.4, 1.95, 0.12, false)] {
+        add(o, (x - size, 0.46, z - size), (x + size, 0.475, z + size), p.leaves);
+        if flower {
+            add(o, (x - 0.07, 0.475, z - 0.07), (x + 0.07, 0.56, z + 0.07), p.blossom);
+            add(o, (x - 0.025, 0.56, z - 0.025), (x + 0.025, 0.6, z + 0.025), p.flowers);
+        }
+    }
 }
 
 // Fuente sobre el cuenco en (cx, cz) a la altura `top`: agua en el cuenco,
