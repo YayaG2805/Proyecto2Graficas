@@ -5,6 +5,7 @@ mod cube;
 mod framebuffer;
 mod light;
 mod material;
+mod postprocess;
 mod procedural;
 mod ray_intersect;
 mod renderer;
