@@ -44,6 +44,10 @@ pub struct Material {
     // mundo (0 = plana). La caja sigue siendo plana, pero la normal se
     // inclina segun la pendiente del brillo de la textura.
     pub bump: f32,
+    // Metal: su reflejo se tine con el color de la superficie (el oro refleja
+    // dorado). En los demas materiales (dielectricos: ceramica, agua,
+    // marmol...) el reflejo conserva el color de lo reflejado.
+    pub metallic: bool,
 }
 
 impl Material {
@@ -70,6 +74,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.0,
             bump: 0.06,
+            metallic: false,
         }
     }
 
@@ -88,6 +93,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.15,
             bump: 0.024,
+            metallic: false,
         }
     }
 
@@ -106,6 +112,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 1.0,
             bump: 0.016,
+            metallic: true,
         }
     }
 
@@ -125,6 +132,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.0,
             bump: 0.0,
+            metallic: false,
         }
     }
 
@@ -144,6 +152,7 @@ impl Material {
             ripple: 0.12,
             fresnel: 0.0,
             bump: 0.0,
+            metallic: false,
         }
     }
 
@@ -184,6 +193,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.4,
             bump: 0.04,
+            metallic: false,
         }
     }
 
@@ -204,6 +214,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.0,
             bump: 0.0,
+            metallic: false,
         }
     }
 
@@ -223,6 +234,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.7,
             bump: 0.05,
+            metallic: false,
         }
     }
 
@@ -262,6 +274,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.0,
             bump: 0.03,
+            metallic: false,
         }
     }
 
@@ -282,6 +295,7 @@ impl Material {
             ripple: 0.0,
             fresnel: 0.0,
             bump: 0.0,
+            metallic: false,
         }
     }
 }
