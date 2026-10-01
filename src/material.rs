@@ -29,6 +29,9 @@ pub struct Material {
     pub transparency: f32,
     // Indice de refraccion n (aire = 1.0). Solo importa si transparency > 0.
     pub refractive_index: f32,
+    // Luz propia: la superficie brilla con su color aunque no le llegue luz
+    // (fuego). 0 = no emite; 1 = se ve con su color base completo.
+    pub emission: f32,
 }
 
 impl Material {
@@ -51,6 +54,7 @@ impl Material {
             reflectivity: 0.02,
             transparency: 0.0,
             refractive_index: 1.0,
+            emission: 0.0,
         }
     }
 
@@ -65,6 +69,7 @@ impl Material {
             reflectivity: 0.05,
             transparency: 0.0,
             refractive_index: 1.0,
+            emission: 0.0,
         }
     }
 
@@ -79,6 +84,7 @@ impl Material {
             reflectivity: 0.65,
             transparency: 0.0,
             refractive_index: 1.0,
+            emission: 0.0,
         }
     }
 
@@ -94,6 +100,7 @@ impl Material {
             reflectivity: 0.1,
             transparency: 0.85,
             refractive_index: 1.5,
+            emission: 0.0,
         }
     }
 
@@ -109,6 +116,7 @@ impl Material {
             reflectivity: 0.3,
             transparency: 0.5,
             refractive_index: 1.33,
+            emission: 0.0,
         }
     }
 
@@ -125,6 +133,24 @@ impl Material {
             reflectivity: 0.0,
             transparency: 0.0,
             refractive_index: 1.0,
+            emission: 0.0,
+        }
+    }
+
+    // Fuego: llamas de los braseros y nucleo del farol. Emite su propia luz,
+    // asi que no necesita sombreado. Las luces puntuales de la escena se
+    // ubican sobre estas cajas para que el fuego ilumine lo que lo rodea.
+    pub fn fire(texture: Texture) -> Self {
+        Material {
+            name: "Fuego",
+            texture,
+            albedo: Color::new(255.0, 220.0, 170.0),
+            specular: 0.0,
+            shininess: 1.0,
+            reflectivity: 0.0,
+            transparency: 0.0,
+            refractive_index: 1.0,
+            emission: 1.3,
         }
     }
 }

@@ -85,6 +85,13 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
 
     let material = &scene.materials[intersect.material_id];
     let base_color = material.base_color(intersect.u, intersect.v);
+
+    // Superficie emisiva (fuego): brilla con su propio color. No depende de
+    // las luces, asi que no se calcula difuso, sombras ni reflejos.
+    if material.emission > 0.0 {
+        return base_color * material.emission;
+    }
+
     let normal = intersect.normal;
     let view_dir = -ray_direction; // V: direccion hacia la camara
 
