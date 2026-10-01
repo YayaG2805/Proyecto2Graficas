@@ -35,6 +35,11 @@ pub struct Material {
     // Ondas: cuanto se inclina la normal para simular una superficie que
     // ondula (agua). 0 = superficie lisa.
     pub ripple: f32,
+    // Fresnel en superficies opacas: cuanto AUMENTA el reflejo al mirar la
+    // superficie de lado (0 = igual desde cualquier angulo, 1 = casi espejo a
+    // ras). Una superficie pulida (metal, ceramica) tiene mucho; una rugosa
+    // (piedra, pasto) casi nada, porque su aspereza dispersa el reflejo.
+    pub fresnel: f32,
 }
 
 impl Material {
@@ -59,6 +64,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 0.0,
         }
     }
 
@@ -75,6 +81,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 0.15,
         }
     }
 
@@ -91,6 +98,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 1.0,
         }
     }
 
@@ -108,6 +116,7 @@ impl Material {
             refractive_index: 1.5,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 0.0,
         }
     }
 
@@ -125,6 +134,7 @@ impl Material {
             refractive_index: 1.33,
             emission: 0.0,
             ripple: 0.12,
+            fresnel: 0.0,
         }
     }
 
@@ -163,6 +173,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 0.4,
         }
     }
 
@@ -181,6 +192,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 0.0,
         }
     }
 
@@ -198,6 +210,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 0.7,
         }
     }
 
@@ -235,6 +248,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 0.0,
             ripple: 0.0,
+            fresnel: 0.0,
         }
     }
 
@@ -253,6 +267,7 @@ impl Material {
             refractive_index: 1.0,
             emission: 1.3,
             ripple: 0.0,
+            fresnel: 0.0,
         }
     }
 }

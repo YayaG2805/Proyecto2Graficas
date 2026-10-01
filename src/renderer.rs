@@ -180,8 +180,20 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
         specular = specular + light.color * (material.specular * specular_intensity * light_intensity);
     }
 
-    let reflectivity = material.reflectivity;
     let transparency = material.transparency;
+
+    // Fresnel en superficies opacas (Schlick): de frente se refleja solo
+    // `reflectivity`; al mirar de lado el reflejo crece hacia el maximo que
+    // permite el material (lo que no es transparente). `fresnel` dice cuanto
+    // se acerca a ese maximo. Asi el oro de los capiteles o las tejas
+    // brillan con el cielo en los bordes, como en la vida real.
+    let reflectivity = if material.fresnel > 0.0 {
+        let edge = (1.0 - dot(&view_dir, &normal).abs()).powi(5);
+        let headroom = (1.0 - material.reflectivity - transparency).max(0.0);
+        material.reflectivity + headroom * edge * material.fresnel
+    } else {
+        material.reflectivity
+    };
     let mut surface_weight = (1.0 - reflectivity - transparency).max(0.0);
     let mut reflect_weight = reflectivity;
     let mut refract_weight = 0.0;
