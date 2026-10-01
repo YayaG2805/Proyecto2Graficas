@@ -513,12 +513,21 @@ fn sky_shrine(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (-3.7, 5.6, -8.9), (-3.2, 6.0, -8.4), p.leaves);
 }
 
-// Cristales creciendo hacia abajo bajo la isla principal.
+// Cristales creciendo hacia abajo bajo la isla principal, cada uno con su
+// nucleo de energia brillante (x0, x1, y0, y1, z0, z1).
 fn under_crystals(o: &mut Vec<Cube>, p: &Palette) {
-    add(o, (-3.0, -4.6, -2.6), (-2.6, -3.51, -2.2), p.glass);
-    add(o, (2.2, -4.2, -2.4), (2.5, -3.51, -2.1), p.glass);
-    add(o, (-1.2, -5.2, 2.3), (-0.8, -4.5, 2.7), p.glass);
-    add(o, (0.6, -6.4, 0.0), (0.9, -5.6, 0.3), p.glass);
+    let crystals = [
+        (-3.0, -2.6, -4.6, -3.51, -2.6, -2.2),
+        (2.2, 2.5, -4.2, -3.51, -2.4, -2.1),
+        (-1.2, -0.8, -5.2, -4.5, 2.3, 2.7),
+        (0.6, 0.9, -6.4, -5.6, 0.0, 0.3),
+    ];
+    for (x0, x1, y0, y1, z0, z1) in crystals {
+        add(o, (x0, y0, z0), (x1, y1, z1), p.glass);
+        let (cx, cy, cz) = ((x0 + x1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5);
+        let r = (x1 - x0) * 0.2;
+        add(o, (cx - r, cy - 2.0 * r, cz - r), (cx + r, cy + 2.0 * r, cz + r), p.magic);
+    }
 }
 
 // Detalles del patio: camino de losas, cajas de madera y un andamio junto a
