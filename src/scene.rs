@@ -154,7 +154,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 20] = [
+    let parts: [PartBuilder; 21] = [
         floating_island,
         floating_rocks,
         pond,
@@ -171,6 +171,7 @@ pub fn build_scene() -> Scene {
         trees,
         cherry_tree,
         banners,
+        stone_lanterns,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -211,6 +212,9 @@ fn build_lights() -> Vec<Light> {
         Light::point(Vec3::new(3.6, 2.3, -0.8), 1.4, Color::new(255.0, 150.0, 60.0), 4.0),
         // Farol de la isla satelite: mas amarillo y con algo mas de alcance.
         Light::point(Vec3::new(11.5, 2.04, -0.8), 1.3, Color::new(255.0, 190.0, 100.0), 4.5),
+        // Linternas de piedra junto al portal (posiciones en STONE_LANTERNS).
+        Light::point(lantern_light(STONE_LANTERNS[0]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
+        Light::point(lantern_light(STONE_LANTERNS[1]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
     ]
 }
 
@@ -771,5 +775,33 @@ fn hanging_bridge(o: &mut Vec<Cube>, p: &Palette) {
         for z in [z0 - 0.1, z1] {
             add(o, (x, y, z), (x + 0.1, y + 0.75, z + 0.1), p.bark);
         }
+    }
+}
+
+// Posiciones (x, z) de las linternas de piedra, a los lados del camino que
+// llega al portal. Las usan tanto la geometria como sus luces.
+const STONE_LANTERNS: [(f32, f32); 2] = [(5.7, -0.3), (5.7, 2.0)];
+
+// Altura del fuego dentro de la linterna (ver stone_lanterns).
+fn lantern_light((x, z): (f32, f32)) -> Vec3 {
+    Vec3::new(x, 0.95, z)
+}
+
+// Linternas de piedra estilo toro: base ancha, poste, caja de fuego abierta
+// con cuatro pilarcitos, techo escalonado y una punta.
+fn stone_lanterns(o: &mut Vec<Cube>, p: &Palette) {
+    for (x, z) in STONE_LANTERNS {
+        add(o, (x - 0.25, 0.0, z - 0.25), (x + 0.25, 0.12, z + 0.25), p.stone); // base
+        add(o, (x - 0.1, 0.12, z - 0.1), (x + 0.1, 0.7, z + 0.1), p.stone); // poste
+        add(o, (x - 0.2, 0.7, z - 0.2), (x + 0.2, 0.8, z + 0.2), p.stone); // plato
+        // Caja de fuego: el fuego adentro y cuatro pilarcitos en las esquinas.
+        add(o, (x - 0.1, 0.8, z - 0.1), (x + 0.1, 1.08, z + 0.1), p.fire);
+        for (sx, sz) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
+            let (px, pz) = (x + sx * 0.15, z + sz * 0.15);
+            add(o, (px - 0.04, 0.8, pz - 0.04), (px + 0.04, 1.1, pz + 0.04), p.stone);
+        }
+        add(o, (x - 0.3, 1.1, z - 0.3), (x + 0.3, 1.2, z + 0.3), p.stone); // techo
+        add(o, (x - 0.18, 1.2, z - 0.18), (x + 0.18, 1.3, z + 0.18), p.stone);
+        add(o, (x - 0.06, 1.3, z - 0.06), (x + 0.06, 1.42, z + 0.06), p.stone); // punta
     }
 }
