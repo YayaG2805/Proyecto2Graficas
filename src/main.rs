@@ -3,7 +3,6 @@ mod camera;
 mod color;
 mod cube;
 mod framebuffer;
-mod group;
 mod light;
 mod material;
 mod procedural;
