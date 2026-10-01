@@ -434,3 +434,25 @@ pub fn wing() -> Texture {
         mix(dark, light, t) * (0.94 + 0.1 * hash(x, y, 151))
     })
 }
+
+// TEJAS vidriadas: filas de tejas curvas de 4 px de ancho, cada fila tapa
+// la parte de arriba de la siguiente; brillo en el lomo de cada teja y
+// sombra en la union entre tejas.
+pub fn tiles() -> Texture {
+    generate(|x, y| {
+        let base = Color::new(40.0, 140.0, 125.0);
+        let row = y / 6;
+        let (cx, cy) = ((x + if row % 2 == 0 { 0 } else { 2 }).rem_euclid(4), y % 6);
+
+        if cy == 5 {
+            return base * 0.45; // sombra bajo el borde de la fila de arriba
+        }
+        if cx == 0 {
+            return base * 0.7; // union entre tejas
+        }
+        // Lomo de la teja: mas claro en el centro (cx = 2).
+        let curve = if cx == 2 { 1.25 } else { 1.0 };
+        let glaze = 0.92 + 0.12 * hash(x / 4, row, 161);
+        base * (curve * glaze)
+    })
+}

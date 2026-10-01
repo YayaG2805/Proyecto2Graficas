@@ -184,6 +184,23 @@ impl Material {
         }
     }
 
+    // Tejas vidriadas de la pagoda: ceramica esmaltada, brillante y con un
+    // poco de reflejo.
+    pub fn tiles(texture: Texture) -> Self {
+        Material {
+            name: "Tejas",
+            texture,
+            albedo: Color::new(255.0, 255.0, 255.0),
+            specular: 0.6,
+            shininess: 48.0,
+            reflectivity: 0.12,
+            transparency: 0.0,
+            refractive_index: 1.0,
+            emission: 0.0,
+            ripple: 0.0,
+        }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", ..Material::stone(texture) }
