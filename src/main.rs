@@ -44,7 +44,7 @@ const VIEWS: [View; 6] = [
     View { name: "General", target: [1.5, 1.0, -1.5], yaw: 0.6, pitch: 0.35, distance: 22.0 },
     View { name: "Altar y cristal", target: [0.0, 3.0, -2.7], yaw: 0.15, pitch: 0.12, distance: 5.5 },
     View { name: "Estanque", target: [-3.2, 0.4, 3.0], yaw: 0.4, pitch: 0.32, distance: 5.0 },
-    View { name: "Contraluz", target: [1.5, 1.0, -1.5], yaw: 2.18, pitch: -0.2, distance: 20.0 },
+    View { name: "Contraluz", target: [0.0, 2.5, -1.0], yaw: 2.75, pitch: -0.1, distance: 24.0 },
     View { name: "Obelisco", target: [-4.5, 6.5, -9.5], yaw: -0.9, pitch: 0.1, distance: 5.0 },
     View { name: "Desde abajo", target: [1.5, 1.0, -1.5], yaw: 0.6, pitch: -0.6, distance: 20.0 },
 ];
