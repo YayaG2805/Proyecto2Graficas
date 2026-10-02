@@ -52,6 +52,7 @@ pub struct Palette {
     pub paper: MaterialId,
     pub cobble: MaterialId,
     pub koi: MaterialId,
+    pub firefly: MaterialId,
 }
 
 impl Palette {
@@ -87,6 +88,8 @@ impl Palette {
             paper: register("paper", procedural::paper, Material::paper),
             cobble: register("cobble", procedural::cobble, Material::cobble),
             koi: register("koi", procedural::koi, Material::koi),
+            // Reusa el PNG del fuego (mismo archivo, otro albedo).
+            firefly: register("fire", procedural::fire, Material::firefly),
         }
     }
 }
@@ -168,7 +171,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 30] = [
+    let parts: [PartBuilder; 31] = [
         floating_island,
         floating_rocks,
         pond,
@@ -195,6 +198,7 @@ pub fn build_scene() -> Scene {
         distant_islands,
         obsidian_circle,
         airship,
+        fireflies,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -1230,4 +1234,23 @@ fn airship(o: &mut Vec<Cube>, p: &Palette) {
     paper_lantern(o, p, x + 1.9, y - 0.35, z, 0.08);
     add(o, (x + 0.5, y, z - 0.03), (x + 0.56, y + 0.9, z + 0.03), p.wood);
     add(o, (x + 0.56, y + 0.6, z - 0.01), (x + 0.95, y + 0.85, z + 0.01), p.cloth);
+}
+
+// Luciernagas: puntos de luz verde-amarilla flotando cerca del pasto, en
+// nubecitas alrededor del cerezo, el estanque y los arboles. Cada nube es
+// (centro x, z, radio); la posicion de cada luciernaga sale del hash.
+fn fireflies(o: &mut Vec<Cube>, p: &Palette) {
+    let swarms = [(1.0, 3.7, 1.8), (-3.2, 3.0, 2.0), (5.7, 4.0, 1.5), (-5.4, -4.4, 1.3), (11.5, 0.5, 1.2)];
+    for (s, (cx, cz, radius)) in swarms.iter().enumerate() {
+        for i in 0..8 {
+            let seed = (s * 8 + i) as i32;
+            let angle = procedural::hash(seed, 0, 271) * std::f32::consts::TAU;
+            let r = radius * procedural::hash(seed, 1, 272).sqrt();
+            let x = cx + angle.cos() * r;
+            let z = cz + angle.sin() * r;
+            let y = 0.3 + 1.5 * procedural::hash(seed, 2, 273);
+            let size = 0.035;
+            add(o, (x - size, y - size, z - size), (x + size, y + size, z + size), p.firefly);
+        }
+    }
 }
