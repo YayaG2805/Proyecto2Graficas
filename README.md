@@ -3,9 +3,10 @@
 Raytracer en Rust que renderiza en tiempo real un diorama voxel: un santuario
 en ruinas sobre una isla flotante, al atardecer, sobre un mar de nubes, con
 una pagoda en una isla vecina, un cerezo en flor, tres dragones volando
-alrededor, un dirigible, farolillos de papel subiendo al cielo y un
-archipiélago de islas lejanas. Todo se calcula en el CPU, sin GPU ni
-shaders: 1181 cajas, 23 materiales y 9 luces.
+alrededor, un dirigible, farolillos de papel subiendo al cielo, un
+archipiélago de islas lejanas y dos invitados: All Might gigante detrás del
+templo y Asta con la espada mata demonios. Todo se calcula en el CPU, sin
+GPU ni shaders: 1447 cajas, 35 materiales y 10 luces.
 
 ![Vista general del santuario](docs/vista_general.png)
 
@@ -43,7 +44,7 @@ cargo run -- --bench
 | `A` / `D`, flechas o arrastrar con el mouse | Rotar alrededor del diorama |
 | `W` / `S` | Inclinar la cámara |
 | `Q` / `E` o rueda del mouse | Zoom |
-| `1` – `7` | Vistas predefinidas (transición suave) |
+| `1` – `9` | Vistas predefinidas (transición suave) |
 | `R` | Reiniciar la cámara |
 | `Espacio` | Giro automático |
 | `P` | Activa o desactiva la vista previa a media resolución mientras la cámara se mueve (desactivada, todo se renderiza a resolución completa: útil para grabar) |
@@ -54,9 +55,9 @@ cargo run -- --bench
 
 | Requisito | Dónde se ve | Implementación |
 |---|---|---|
-| Complejidad de la escena | 1181 cajas: templo, pagoda, cerezo, fuente con koi, puentes, dragones, dirigible, monolitos, islas lejanas | `scene.rs` (una función por zona), `dragon.rs` |
+| Complejidad de la escena | 1447 cajas: templo, pagoda, cerezo, fuente con koi, puentes, dragones, dirigible, monolitos, islas lejanas, All Might y Asta | `scene.rs` (una función por zona), `dragon.rs`, `characters.rs` |
 | Atractivo visual | Atardecer, luz cálida y fría, fuego, magia, farolillos, bruma, relieve en las texturas, antialiasing | `scene.rs: build_lights`, `skybox.rs`, `postprocess.rs`, `renderer.rs: bump_normal` |
-| Rotación y zoom de la cámara | Teclado, mouse y vistas 1–7 | `camera.rs: OrbitCamera` |
+| Rotación y zoom de la cámara | Teclado, mouse y vistas 1–9 | `camera.rs: OrbitCamera` |
 | 5 materiales con textura, albedo, specular, transparencia y reflectividad | Piedra, madera, metal, cristal y agua | `material.rs`, `procedural.rs` |
 | Refracción | Cristal del altar, obelisco y agua del estanque | `renderer.rs: refract` (ley de Snell) |
 | Reflexión | Metal dorado, piso de mármol pulido, monolitos de obsidiana, tejas, agua y cristal; más reflejo al mirar de lado (Fresnel) | `renderer.rs: reflect` y rayos recursivos |
@@ -81,8 +82,8 @@ parámetros que definen cómo responde a la luz:
   transparente).
 - **Relieve:** profundidad del *bump mapping* en unidades de mundo.
 
-Además hay 18 materiales decorativos (no cuentan para la rúbrica), cada uno
-con su propia textura procedural:
+Además hay 30 materiales decorativos (no cuentan para la rúbrica). Los de
+la escena tienen su propia textura procedural:
 
 | Material | Dónde | Detalle |
 |---|---|---|
@@ -102,6 +103,19 @@ con su propia textura procedural:
 | Koi | Peces del estanque | Escamas naranjas con manchas blancas |
 | Luciérnaga | Nubes de luciérnagas | Emisivo verde-amarillo |
 
+Y los de los personajes:
+
+| Material | Dónde | Detalle |
+|---|---|---|
+| Piel | All Might y Asta | Mate con brillo ancho y un relieve muy leve |
+| Cabello dorado, Cabello blanco | Mechones de All Might, picos de Asta | Mechones verticales con brillo en bandas y relieve entre mechones |
+| Traje azul, rojo, blanco y amarillo | Traje de All Might, dientes | Spandex satinado. Comparten una textura casi blanca y cada uno le da su color con el albedo |
+| Tela negra | Ropa, capa y bandana de Asta, cuencas de los ojos de All Might | Misma textura del traje, albedo oscuro |
+| Cuero | Botas y cinturón de Asta | Arrugas, poros y costura punteada, con relieve |
+| Hierro demoníaco | Espada mata demonios | Metal negro con grietas rojas que **brillan** (`glow` 0.9), relieve 0.05 |
+| Vendas | Mango de la espada | Tiras enrolladas en diagonal |
+| Antimagia | Aura, brazo y ojo de Asta | Emisivo rojo sobre la textura de la obsidiana |
+
 La luz que llega a una superficie se reparte así: `reflectividad` se refleja
 como espejo, `transparencia` atraviesa el material y el resto se ve con el
 color propio (textura × albedo, iluminada con Lambert y Phong). Las texturas
@@ -119,7 +133,33 @@ periódico, así que el borde derecho de la textura empata con el izquierdo.
 | ![Pagoda](docs/pagoda.png) **Pagoda:** tejas vidriadas, ventanas encendidas y puente colgante | ![Cerezo](docs/cerezo.png) **Cerezo:** copa irregular y pétalos en el suelo y en el aire |
 | ![Cristales](docs/cristales.png) **Islote de cristales:** núcleos mágicos vistos a través del vidrio | ![Linternas](docs/linternas.png) **Linternas de piedra:** luz puntual cálida junto al portal |
 | ![Mármol](docs/marmol.png) **Piso de mármol:** refleja las columnas, el cristal y el cielo, más fuerte al mirarlo de lado (Fresnel) | ![Monolitos](docs/monolitos.png) **Monolitos de obsidiana:** espejos oscuros que se reflejan entre sí |
-| ![Dirigible](docs/dirigible.png) **Dirigible:** casco de madera, globo de tela y hélice de metal, con islas lejanas detrás | |
+| ![Dirigible](docs/dirigible.png) **Dirigible:** casco de madera, globo de tela y hélice de metal, sobre la isla de los monolitos | ![All Might](docs/all_might.png) **All Might:** gigante de 17 unidades con el puño en alto |
+| ![Asta](docs/asta.png) **Asta:** espada mata demonios con grietas que brillan, aura de antimagia y luz roja | |
+
+## Personajes invitados
+
+`characters.rs` arma a los dos personajes con cajas, en coordenadas locales
+(adelante, arriba, su derecha) igual que los dragones (`placement.rs`), así
+que se pueden mover, girar en 4 direcciones y escalar. Están basados en
+imágenes de referencia del anime (son *fan art* sin fines comerciales; los
+personajes pertenecen a sus autores).
+
+- **All Might** (*My Hero Academia*): a escala 1.75 mide unas 17 unidades
+  y se alza detrás del templo, sobre su propia isla con el pasto agrietado.
+  Pose de victoria: el puño izquierdo al cielo y el brazo derecho relajado.
+  Traje azul marino con los paneles rojos del pecho y el abdomen, blanco
+  junto al cuello y en los hombros, cinturón amarillo con hebilla de metal,
+  franjas blancas y rojas a los lados de las piernas y botas rojas. La cara
+  queda en sombra con los ojos brillando (material de magia), la sonrisa de
+  dientes blancos y los dos mechones en V hechos de escalones que se abren.
+- **Asta** (*Black Clover*): en la isla satélite, en su forma de
+  antimagia. Media cara negra con el ojo rojo encendido y el otro verde,
+  bandana con emblema, cabello blanco en picos, cuerno negro de obsidiana y
+  la capa de los Toros Negros con borde y emblema dorados. La espada mata
+  demonios cruza en diagonal frente a él: como las cajas no se pueden
+  inclinar, la hoja es una escalera de cajas a lo largo de su dirección,
+  con mellas en el filo y el mango vendado. Lo rodea un aura de chispas y
+  lenguas de antimagia, con una luz puntual roja que tiñe la isla.
 
 ## Cómo funciona
 
@@ -166,6 +206,10 @@ Detalles extra de calidad:
   normal se inclina sobre la tangente y la bitangente de la cara. Así las
   juntas de la piedra, los surcos de la corteza y el empedrado reciben la
   luz como si tuvieran relieve, aunque las cajas sean planas.
+- **Brillo propio parcial (`glow`):** a diferencia de `emission` (que
+  reemplaza la iluminación), se suma a ella multiplicado por el color de la
+  textura. Las partes claras brillan mucho y las oscuras casi nada: así
+  solo se encienden las grietas rojas de la espada de Asta.
 - **Ondas en el agua:** la normal se inclina con una suma de senos según la
   posición (como un *normal map* calculado), así el reflejo y la refracción
   ondulan.
@@ -191,7 +235,7 @@ En un i7-12700H (20 hilos), a 800×600, medido con `--bench`:
 | General | ~117 ms |
 | Altar y cristal | ~250 ms |
 | Estanque | ~225 ms |
-| Contraluz, obelisco, desde abajo, monolitos | ~70–100 ms |
+| Contraluz, obelisco, desde abajo, monolitos, All Might, Asta | ~70–100 ms |
 
 Los tiempos varían bastante según el modo de energía del equipo: medida
 justo antes, en las mismas condiciones, la versión anterior de la escena
@@ -226,7 +270,9 @@ commit, con su medición):
 | `camera.rs` | Cámara orbital con movimiento suavizado |
 | `renderer.rs` | `cast_ray` (iluminación, sombras, reflexión con Fresnel, refracción, bump mapping, ondas, bruma) y render en paralelo con antialiasing |
 | `postprocess.rs` | Tone mapping y viñeta |
-| `dragon.rs` | Modelo de dragón en coordenadas locales |
+| `placement.rs` | Coordenadas locales (adelante, arriba, lado) para modelos voxel |
+| `dragon.rs` | Modelo de dragón |
+| `characters.rs` | All Might y Asta |
 | `scene.rs` | Construcción del diorama, luces, búsqueda de impactos y sombras |
 | `bvh.rs` | Jerarquía de cajas envolventes |
 | `cube.rs` | Caja alineada a los ejes: intersección por el método *slab*, normal y UV |
