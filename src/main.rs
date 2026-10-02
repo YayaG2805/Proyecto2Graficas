@@ -30,7 +30,7 @@ const WHEEL_ZOOM_STEP: f32 = 1.0; // unidades por "clic" de rueda
 const MOUSE_SENSITIVITY: f32 = 0.006; // radianes por pixel arrastrado
 const AUTO_ROTATE_SPEED: f32 = 0.3; // radianes/s del giro automatico
 
-// Vistas predefinidas (teclas 1-6) para mostrar cada parte de la rubrica:
+// Vistas predefinidas (teclas 1-7) para mostrar cada parte de la rubrica:
 // (nombre, target, yaw, pitch, distance). La 1 es tambien la vista inicial.
 struct View {
     name: &'static str,
@@ -40,22 +40,24 @@ struct View {
     distance: f32,
 }
 
-const VIEWS: [View; 6] = [
+const VIEWS: [View; 7] = [
     View { name: "General", target: [1.5, 1.0, -1.5], yaw: 0.6, pitch: 0.35, distance: 22.0 },
     View { name: "Altar y cristal", target: [0.0, 3.0, -2.7], yaw: 0.15, pitch: 0.12, distance: 5.5 },
     View { name: "Estanque", target: [-3.2, 0.4, 3.0], yaw: 0.4, pitch: 0.32, distance: 5.0 },
     View { name: "Contraluz", target: [0.0, 2.5, -1.0], yaw: 2.75, pitch: -0.1, distance: 24.0 },
     View { name: "Obelisco", target: [-4.5, 6.5, -9.5], yaw: -0.9, pitch: 0.1, distance: 5.0 },
     View { name: "Desde abajo", target: [1.5, 1.0, -1.5], yaw: 0.6, pitch: -0.6, distance: 20.0 },
+    View { name: "Monolitos", target: [-17.0, 4.6, -7.0], yaw: 0.3, pitch: 0.3, distance: 6.0 },
 ];
 
-const VIEW_KEYS: [KeyboardKey; 6] = [
+const VIEW_KEYS: [KeyboardKey; 7] = [
     KeyboardKey::KEY_ONE,
     KeyboardKey::KEY_TWO,
     KeyboardKey::KEY_THREE,
     KeyboardKey::KEY_FOUR,
     KeyboardKey::KEY_FIVE,
     KeyboardKey::KEY_SIX,
+    KeyboardKey::KEY_SEVEN,
 ];
 
 fn view_target(view: &View) -> Vec3 {
@@ -105,7 +107,7 @@ fn handle_camera_input(rl: &RaylibHandle, camera: &mut OrbitCamera, auto_rotate:
         camera.set_view(view_target(view), view.yaw, view.pitch, view.distance);
     }
 
-    // Teclas 1-6: volar a una vista predefinida.
+    // Teclas 1-7: volar a una vista predefinida.
     for (key, view) in VIEW_KEYS.iter().zip(VIEWS.iter()) {
         if rl.is_key_pressed(*key) {
             camera.set_view(view_target(view), view.yaw, view.pitch, view.distance);
@@ -133,7 +135,7 @@ fn draw_help(d: &mut RaylibDrawHandle, render_ms: f32, auto_rotate: bool, previe
         format!("FPS: {}   render: {:.0} ms", d.get_fps(), render_ms),
         "A/D, flechas o arrastrar: rotar".to_string(),
         "W/S: inclinar   Q/E o rueda: zoom".to_string(),
-        "1-6: vistas   R: reiniciar".to_string(),
+        "1-7: vistas   R: reiniciar".to_string(),
         format!("Espacio: giro automatico [{}]", on_off(auto_rotate)),
         format!("P: vista previa rapida [{}]", on_off(preview_enabled)),
         "F12: captura   H: ocultar ayuda".to_string(),
