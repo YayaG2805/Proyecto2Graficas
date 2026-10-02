@@ -306,6 +306,11 @@ impl Material {
         Material { name: "Koi", specular: 0.6, shininess: 48.0, fresnel: 0.3, bump: 0.01, ..Material::scales(texture) }
     }
 
+    // Luciernagas: puntitos verde-amarillo con luz propia (como el fuego).
+    pub fn firefly(texture: Texture) -> Self {
+        Material { name: "Luciernaga", albedo: Color::new(210.0, 255.0, 120.0), emission: 1.5, ..Material::fire(texture) }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", bump: 0.09, ..Material::stone(texture) }
