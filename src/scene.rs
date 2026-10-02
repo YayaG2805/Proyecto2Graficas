@@ -168,7 +168,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 27] = [
+    let parts: [PartBuilder; 28] = [
         floating_island,
         floating_rocks,
         pond,
@@ -192,6 +192,7 @@ pub fn build_scene() -> Scene {
         birds,
         sky_lanterns,
         lantern_garland,
+        distant_islands,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -1058,5 +1059,83 @@ fn lantern_garland(o: &mut Vec<Cube>, p: &Palette) {
         let c = point(i as f32 / 5.0);
         add(o, (c.x - 0.01, c.y - 0.12, c.z - 0.01), (c.x + 0.01, c.y, c.z + 0.01), p.wood);
         paper_lantern(o, p, c.x, c.y - 0.25, c.z, 0.09);
+    }
+}
+
+// Que lleva encima cada isla lejana.
+#[derive(Clone, Copy)]
+enum FarDetail {
+    Tree,
+    Ruins,
+    Waterfall,
+    Crystal,
+}
+
+// Islas flotantes lejanas que rodean el santuario a 35-45 unidades (mas
+// alla del zoom maximo de la camara). Llenan
+// el fondo y, gracias a la bruma (apply_fog), se ven claras y "perdidas" en
+// el aire, lo que da escala: el santuario es parte de un archipielago.
+// (centro x, altura del pasto, centro z, mitad del ancho, detalle)
+const DISTANT_ISLANDS: [(f32, f32, f32, f32, FarDetail); 9] = [
+    (-30.0, 9.0, -30.0, 3.5, FarDetail::Tree),
+    (-44.0, 4.0, -4.0, 3.0, FarDetail::Waterfall),
+    (2.0, 12.0, -44.0, 4.0, FarDetail::Ruins),
+    (-16.0, 2.0, -42.0, 2.5, FarDetail::Crystal),
+    (32.0, 7.0, -26.0, 3.0, FarDetail::Tree),
+    (-32.0, 13.0, 18.0, 2.5, FarDetail::Crystal),
+    (16.0, 3.0, 36.0, 3.5, FarDetail::Ruins),
+    (40.0, 10.0, 6.0, 2.5, FarDetail::Tree),
+    (-8.0, 15.0, 38.0, 2.0, FarDetail::Waterfall),
+];
+
+fn distant_islands(o: &mut Vec<Cube>, p: &Palette) {
+    for (i, &(cx, top, cz, half, detail)) in DISTANT_ISLANDS.iter().enumerate() {
+        let seed = i as i32;
+        let h = |k: i32| procedural::hash(seed, k, 261);
+
+        // Pasto y roca escalonada hacia abajo (piramide invertida), cada capa
+        // un poco corrida al azar para que no queden todas centradas.
+        add(o, (cx - half, top - 0.4, cz - half * 0.8), (cx + half, top, cz + half * 0.8), p.grass);
+        let mut width = half * 0.95;
+        let mut y = top - 0.4;
+        for layer in 0..4 {
+            let dx = (h(layer) - 0.5) * half * 0.3;
+            let dz = (h(layer + 10) - 0.5) * half * 0.3;
+            let height = 0.7 + 0.6 * h(layer + 20);
+            add(o, (cx + dx - width, y - height, cz + dz - width * 0.8), (cx + dx + width, y, cz + dz + width * 0.8), p.rock);
+            y -= height;
+            width *= 0.62;
+        }
+
+        match detail {
+            FarDetail::Tree => {
+                let (tx, tz) = (cx + half * 0.3, cz - half * 0.2);
+                add(o, (tx - 0.2, top, tz - 0.2), (tx + 0.2, top + 1.6, tz + 0.2), p.bark);
+                add(o, (tx - 1.1, top + 1.3, tz - 1.0), (tx + 1.1, top + 2.3, tz + 1.0), p.leaves);
+                add(o, (tx - 0.7, top + 2.3, tz - 0.6), (tx + 0.6, top + 2.9, tz + 0.7), p.leaves);
+                add(o, (cx - half * 0.6, top, cz + half * 0.2), (cx - half * 0.3, top + 0.4, cz + half * 0.5), p.leaves);
+            }
+            FarDetail::Ruins => {
+                // Columnas de alturas distintas y un dintel sobre las dos primeras.
+                let columns = [(-0.6, 2.4), (0.6, 2.4), (-0.6, 1.2), (0.6, 0.7)];
+                for (k, (dx, height)) in columns.iter().enumerate() {
+                    let z = if k < 2 { cz - half * 0.3 } else { cz + half * 0.3 };
+                    let x = cx + dx * half;
+                    add(o, (x - 0.22, top, z - 0.22), (x + 0.22, top + height, z + 0.22), p.stone);
+                }
+                add(o, (cx - half * 0.6 - 0.35, top + 2.4, cz - half * 0.3 - 0.3), (cx + half * 0.6 + 0.35, top + 2.75, cz - half * 0.3 + 0.3), p.stone);
+            }
+            FarDetail::Waterfall => {
+                // Estanque en la cima y una caida por el borde.
+                add(o, (cx - half * 0.5, top - 0.3, cz - half * 0.4), (cx + half * 0.3, top + 0.02, cz + half * 0.4), p.water);
+                add(o, (cx + half * 0.3, top - 5.0, cz - 0.3), (cx + half * 0.3 + 0.25, top, cz + 0.3), p.water);
+                add(o, (cx - half * 0.8, top, cz + half * 0.5), (cx - half * 0.5, top + 0.8, cz + half * 0.7), p.leaves);
+            }
+            FarDetail::Crystal => {
+                add(o, (cx - 0.35, top, cz - 0.35), (cx + 0.35, top + 2.2, cz + 0.35), p.glass);
+                add(o, (cx - 0.12, top + 0.7, cz - 0.12), (cx + 0.12, top + 1.4, cz + 0.12), p.magic);
+                add(o, (cx + 0.6, top, cz + 0.2), (cx + 0.9, top + 1.1, cz + 0.5), p.glass);
+            }
+        }
     }
 }
