@@ -302,7 +302,10 @@ pub fn asta(o: &mut Vec<Cube>, p: &Palette, origin: Vec3, heading: Heading, scal
     for i in 0..36 {
         let angle = procedural::hash(i, 0, 361) * std::f32::consts::TAU;
         let radius = 0.35 + 0.45 * procedural::hash(i, 1, 362);
-        let f = angle.cos() * radius - 0.1;
+        // Detras de el el aura se recoge (la mitad trasera queda pegada a la
+        // espalda) para que se vea sobre todo alrededor y por delante.
+        let f = angle.cos() * radius;
+        let f = if f < 0.0 { f * 0.4 } else { f };
         let s = angle.sin() * radius;
         let y = 0.1 + 2.1 * procedural::hash(i, 2, 363);
         let size = 0.02 + 0.03 * procedural::hash(i, 3, 364);
