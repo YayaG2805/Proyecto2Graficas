@@ -168,7 +168,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 28] = [
+    let parts: [PartBuilder; 29] = [
         floating_island,
         floating_rocks,
         pond,
@@ -193,6 +193,7 @@ pub fn build_scene() -> Scene {
         sky_lanterns,
         lantern_garland,
         distant_islands,
+        obsidian_circle,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -235,6 +236,8 @@ fn build_lights() -> Vec<Light> {
         Light::point(Vec3::new(11.5, 2.04, -0.8), 1.3, Color::new(255.0, 190.0, 100.0), 4.5),
         // Energia del cristal del altar: luz cian tenue que tine las columnas.
         Light::point(Vec3::new(0.0, 3.15, -2.0), 0.7, Color::new(120.0, 230.0, 255.0), 3.5),
+        // Orbe del circulo de obsidiana: luz cian sobre el altar.
+        Light::point(Vec3::new(OBSIDIAN_ISLAND.0, OBSIDIAN_ISLAND.1 + 1.3, OBSIDIAN_ISLAND.2), 0.9, Color::new(120.0, 230.0, 255.0), 3.5),
         // Linternas de piedra junto al portal (posiciones en STONE_LANTERNS).
         Light::point(lantern_light(STONE_LANTERNS[0]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
         Light::point(lantern_light(STONE_LANTERNS[1]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
@@ -1138,4 +1141,44 @@ fn distant_islands(o: &mut Vec<Cube>, p: &Palette) {
             }
         }
     }
+}
+
+// Centro (x, altura del pasto, z) de la isla de los monolitos.
+const OBSIDIAN_ISLAND: (f32, f32, f32) = (-17.0, 3.5, -7.0);
+
+// Isla de los monolitos, a la izquierda del santuario: un circulo de piedras
+// altas de obsidiana pulida (casi espejos oscuros que reflejan el cielo, las
+// otras piedras y el orbe) alrededor de un altar de marmol con un orbe de
+// energia flotando. Es la vitrina de la reflexion: cada monolito muestra lo
+// que tiene enfrente, incluidos los reflejos de los otros.
+fn obsidian_circle(o: &mut Vec<Cube>, p: &Palette) {
+    let (cx, top, cz) = OBSIDIAN_ISLAND;
+
+    // Isla: pasto, piso de marmol circular (cruz de dos losas) y roca.
+    add(o, (cx - 2.6, top - 0.4, cz - 2.6), (cx + 2.6, top, cz + 2.6), p.grass);
+    add(o, (cx - 1.4, top, cz - 0.6), (cx + 1.4, top + 0.05, cz + 0.6), p.marble);
+    add(o, (cx - 0.6, top, cz - 1.4), (cx + 0.6, top + 0.05, cz + 1.4), p.marble);
+    add(o, (cx - 2.3, top - 1.4, cz - 2.3), (cx + 2.3, top - 0.4, cz + 2.3), p.rock);
+    add(o, (cx - 1.6, top - 2.4, cz - 1.4), (cx + 1.4, top - 1.4, cz + 1.6), p.rock);
+    add(o, (cx - 0.8, top - 3.3, cz - 0.7), (cx + 0.6, top - 2.4, cz + 0.8), p.rock);
+    add(o, (cx - 0.3, top - 3.9, cz - 0.2), (cx + 0.2, top - 3.3, cz + 0.3), p.rock);
+
+    // Monolitos en circulo, de alturas distintas. Como las cajas no se
+    // pueden rotar, se usan solo los lados del circulo que dan cajas
+    // alineadas (cada monolito es mas ancho en la direccion tangente).
+    let stones = [(0.0, 2.0), (60.0, 1.6), (120.0, 2.2), (180.0, 1.4), (240.0, 2.4), (300.0, 1.8)];
+    for (degrees, height) in stones {
+        let angle = (degrees as f32).to_radians();
+        let (x, z) = (cx + angle.cos() * 1.9, cz + angle.sin() * 1.9);
+        // Ancho a lo largo de la tangente del circulo: si el monolito esta
+        // mas a los lados (|cos| grande), la tangente va en z.
+        let (hx, hz) = if angle.cos().abs() > 0.6 { (0.12, 0.3) } else { (0.3, 0.12) };
+        add(o, (x - hx - 0.06, top, z - hz - 0.06), (x + hx + 0.06, top + 0.2, z + hz + 0.06), p.stone);
+        add(o, (x - hx, top + 0.2, z - hz), (x + hx, top + 0.2 + height, z + hz), p.obsidian);
+    }
+
+    // Altar de marmol con un orbe de energia flotando encima.
+    add(o, (cx - 0.35, top + 0.05, cz - 0.35), (cx + 0.35, top + 0.7, cz + 0.35), p.marble);
+    add(o, (cx - 0.45, top + 0.7, cz - 0.45), (cx + 0.45, top + 0.8, cz + 0.45), p.metal);
+    add(o, (cx - 0.15, top + 1.15, cz - 0.15), (cx + 0.15, top + 1.45, cz + 0.15), p.magic);
 }
