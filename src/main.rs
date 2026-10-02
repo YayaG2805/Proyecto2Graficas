@@ -51,7 +51,7 @@ const VIEWS: [View; 9] = [
     View { name: "Desde abajo", target: [1.5, 1.0, -1.5], yaw: 0.6, pitch: -0.6, distance: 20.0 },
     View { name: "Monolitos", target: [-17.0, 4.6, -7.0], yaw: 0.3, pitch: 0.3, distance: 6.0 },
     View { name: "All Might", target: [-9.0, 7.5, -17.0], yaw: -0.15, pitch: 0.05, distance: 14.0 },
-    View { name: "Asta", target: [11.4, 1.9, 0.3], yaw: 0.25, pitch: 0.12, distance: 3.4 },
+    View { name: "Asta", target: [2.4, 2.0, 2.2], yaw: 1.45, pitch: 0.12, distance: 3.6 },
 ];
 
 const VIEW_KEYS: [KeyboardKey; 9] = [
