@@ -168,7 +168,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 29] = [
+    let parts: [PartBuilder; 30] = [
         floating_island,
         floating_rocks,
         pond,
@@ -194,6 +194,7 @@ pub fn build_scene() -> Scene {
         lantern_garland,
         distant_islands,
         obsidian_circle,
+        airship,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -1181,4 +1182,52 @@ fn obsidian_circle(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (cx - 0.35, top + 0.05, cz - 0.35), (cx + 0.35, top + 0.7, cz + 0.35), p.marble);
     add(o, (cx - 0.45, top + 0.7, cz - 0.45), (cx + 0.45, top + 0.8, cz + 0.45), p.metal);
     add(o, (cx - 0.15, top + 1.15, cz - 0.15), (cx + 0.15, top + 1.45, cz + 0.15), p.magic);
+}
+
+// Dirigible de madera y tela cruzando el cielo detras del templo (vuela
+// hacia +x). Casco de barco escalonado (mas angosto abajo), globo alargado
+// hecho de capas que se angostan en las puntas, cuerdas que los unen,
+// timon, helice de metal y un farolillo en la proa.
+fn airship(o: &mut Vec<Cube>, p: &Palette) {
+    let (x, y, z) = (1.5, 9.0, -12.0); // centro de la cubierta
+
+    // Casco: tres capas, cada una mas corta y angosta hacia abajo, y una
+    // proa que sobresale.
+    add(o, (x - 1.6, y - 0.3, z - 0.55), (x + 1.6, y, z + 0.55), p.wood);
+    add(o, (x - 1.3, y - 0.55, z - 0.4), (x + 1.4, y - 0.3, z + 0.4), p.wood);
+    add(o, (x - 0.9, y - 0.75, z - 0.22), (x + 1.0, y - 0.55, z + 0.22), p.wood);
+    add(o, (x + 1.6, y - 0.2, z - 0.25), (x + 2.0, y + 0.05, z + 0.25), p.wood);
+    // Borda (baranda) dorada alrededor de la cubierta.
+    add(o, (x - 1.6, y, z - 0.55), (x + 1.6, y + 0.12, z - 0.5), p.metal);
+    add(o, (x - 1.6, y, z + 0.5), (x + 1.6, y + 0.12, z + 0.55), p.metal);
+    // Cabina en la popa.
+    add(o, (x - 1.4, y, z - 0.35), (x - 0.6, y + 0.5, z + 0.35), p.wood);
+    add(o, (x - 1.5, y + 0.5, z - 0.42), (x - 0.5, y + 0.58, z + 0.42), p.tiles);
+
+    // Globo: capas centradas sobre la cubierta, mas cortas arriba y abajo
+    // para que la silueta sea redondeada.
+    let balloon_y = y + 1.6;
+    for (half_len, half_w, y0, y1) in [(1.9, 0.6, -0.5, -0.3), (2.3, 0.8, -0.3, 0.3), (2.0, 0.7, 0.3, 0.5), (1.4, 0.45, 0.5, 0.62)] {
+        add(o, (x - half_len, balloon_y + y0, z - half_w), (x + half_len, balloon_y + y1, z + half_w), p.cloth);
+    }
+    // Aletas de cola del globo.
+    add(o, (x - 2.7, balloon_y - 0.05, z - 0.03), (x - 2.2, balloon_y + 0.6, z + 0.03), p.wing);
+    add(o, (x - 2.7, balloon_y + 0.1, z - 0.55), (x - 2.2, balloon_y + 0.16, z + 0.55), p.wing);
+
+    // Cuerdas verticales del globo a la cubierta.
+    for dx in [-1.2, 0.0, 1.2] {
+        for dz in [-0.45, 0.45] {
+            add(o, (x + dx - 0.015, y + 0.12, z + dz - 0.015), (x + dx + 0.015, balloon_y - 0.5, z + dz + 0.015), p.wood);
+        }
+    }
+
+    // Helice en la popa: eje y dos aspas en cruz.
+    add(o, (x - 2.0, y - 0.25, z - 0.04), (x - 1.6, y - 0.17, z + 0.04), p.metal);
+    add(o, (x - 2.08, y - 0.65, z - 0.05), (x - 2.0, y + 0.23, z + 0.05), p.metal);
+    add(o, (x - 2.08, y - 0.26, z - 0.45), (x - 2.0, y - 0.16, z + 0.45), p.metal);
+
+    // Farolillo colgando de la proa y banderin en el mastil.
+    paper_lantern(o, p, x + 1.9, y - 0.35, z, 0.08);
+    add(o, (x + 0.5, y, z - 0.03), (x + 0.56, y + 0.9, z + 0.03), p.wood);
+    add(o, (x + 0.56, y + 0.6, z - 0.01), (x + 0.95, y + 0.85, z + 0.01), p.cloth);
 }
