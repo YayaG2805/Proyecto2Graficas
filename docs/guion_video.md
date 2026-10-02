@@ -8,7 +8,9 @@
    decir `P: vista previa rapida [OFF]`.
 3. Dejar el panel de ayuda visible (muestra los FPS y los controles) o
    ocultarlo con `H` en las tomas "bonitas".
-4. Grabar la ventana con OBS, la Xbox Game Bar (`Win + Alt + R`) o similar.
+4. Opcional: `F11` para pantalla completa (la imagen se ve más grande;
+   el render sigue siendo de 800×600, así que la velocidad no cambia).
+5. Grabar la ventana con OBS, la Xbox Game Bar (`Win + Alt + R`) o similar.
 
 ## Tomas
 
@@ -27,7 +29,7 @@
 | 11 | 3:00 – 3:15 | Acercarse a un dragón y a la pagoda | **Dragones:** escamas de marfil, alas translúcidas que brillan a contraluz, ojos de fuego. **Pagoda:** tejas vidriadas que reflejan, farolillos de papel, puente colgante. |
 | 12 | 3:15 – 3:25 | Acercarse al cerezo y al islote de cristales | Pétalos y luciérnagas; núcleos mágicos que se ven a través del vidrio (refracción). |
 | 13 | 3:25 – 3:40 | Vista `8` (All Might) | **Personaje gigante:** traje con sus franjas y paneles, ojos que brillan en la sombra, mechones en V. Hecho con coordenadas locales como los dragones. |
-| 14 | 3:40 – 3:55 | Vista `9` (Asta); rotar un poco con `A`/`D` | **Espada mata demonios:** las grietas rojas brillan con `glow` sobre el hierro negro; aura de antimagia y luz roja que tiñe la isla. |
+| 14 | 3:40 – 3:55 | Vista `9` (Asta); rotar un poco con `A`/`D` | **Espada mata demonios:** las grietas rojas brillan con `glow` sobre el hierro negro; aura de antimagia y luz roja que tiñe el patio frente al templo. |
 | 15 | 3:55 – 4:05 | `R` para volver a la vista inicial y esperar un segundo quieto | Cierre: la imagen se vuelve a calcular con antialiasing. |
 
 ## Después de grabar
