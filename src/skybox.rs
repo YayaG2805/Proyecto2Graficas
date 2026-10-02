@@ -46,6 +46,10 @@ const NEAR_MOUNTAINS: Color = Color { r: 105.0, g: 70.0, b: 120.0 };
 const HIGH_CLOUD_LIT: Color = Color { r: 255.0, g: 195.0, b: 165.0 };
 const HIGH_CLOUD_SHADE: Color = Color { r: 140.0, g: 85.0, b: 135.0 };
 
+// Luna: disco palido con mares oscuros, del lado opuesto al sol.
+const MOON_COLOR: Color = Color { r: 235.0, g: 230.0, b: 245.0 };
+const MOON_DIRECTION: (f32, f32, f32) = (-0.27, 0.4, -0.86);
+
 const SUN_COLOR: Color = Color { r: 255.0, g: 245.0, b: 220.0 };
 const SUN_GLOW: Color = Color { r: 255.0, g: 190.0, b: 130.0 };
 
@@ -105,6 +109,22 @@ impl Skybox {
             }
         }
 
+        // Luna: cos_moon es 1 en el centro del disco. Las coordenadas dentro
+        // del disco (componentes de la direccion perpendiculares a la de la
+        // luna) se usan para leer ruido y dibujar los "mares" oscuros. Un
+        // halo tenue la rodea.
+        let moon_dir = Vec3::new(MOON_DIRECTION.0, MOON_DIRECTION.1, MOON_DIRECTION.2).normalize();
+        let cos_moon = dot(direction, &moon_dir);
+        if cos_moon > 0.99 {
+            color = color + MOON_COLOR * ((cos_moon - 0.99) / 0.01).powi(3) * 0.12;
+            if cos_moon > 0.9993 {
+                let offset = direction - moon_dir * cos_moon;
+                let maria = fractal_noise(offset.x * 180.0 + 5.0, (offset.y + offset.z) * 180.0, 311);
+                let dark = if maria > 0.55 { 0.78 } else { 1.0 };
+                color = MOON_COLOR * dark;
+            }
+        }
+
         // Nubes sobre el horizonte: igual que el mar de nubes, la direccion
         // se proyecta sobre un plano (ahora arriba) y ahi se evalua el ruido.
         // Para sombrearlas se vuelve a leer el ruido un poco mas hacia el sol:
@@ -152,7 +172,24 @@ impl Skybox {
             let density = fractal_noise(plane_x * 0.6, plane_z * 0.6, 81);
             let cloud = ((density - 0.42) / 0.25).clamp(0.0, 1.0);
             let horizon_fade = (depth / 0.12).min(1.0);
-            color = mix(color, CLOUD_COLOR * (0.75 + 0.25 * cloud), cloud * horizon_fade * 0.85);
+            // Relieve: igual que en las nubes altas, se compara con el ruido
+            // un poco hacia el sol. Las crestas que miran al sol se aclaran y
+            // las hondonadas quedan en sombra lila: el mar de nubes deja de
+            // verse plano.
+            let toward_sun = fractal_noise(
+                (plane_x + self.sun_direction.x * 0.25) * 0.6,
+                (plane_z + self.sun_direction.z * 0.25) * 0.6,
+                81,
+            );
+            let relief = (0.75 + (density - toward_sun) * 5.0).clamp(0.45, 1.15);
+            color = mix(color, CLOUD_COLOR * ((0.75 + 0.25 * cloud) * relief), cloud * horizon_fade * 0.85);
+
+            // Brillo del sol sobre el mar de nubes: un resplandor calido en
+            // la direccion horizontal del sol, mas fuerte cerca del horizonte.
+            let flat_sun = Vec3::new(self.sun_direction.x, 0.0, self.sun_direction.z).normalize();
+            let flat_dir = Vec3::new(direction.x, 0.0, direction.z).normalize();
+            let facing = dot(&flat_dir, &flat_sun).max(0.0).powf(6.0);
+            color = color + SUN_GLOW * (facing * (1.0 - depth).powi(4) * 0.35);
         }
 
         // Sol: resplandor amplio + halo cercano + disco. cos_angle es 1 justo
@@ -160,8 +197,12 @@ impl Skybox {
         let cos_angle = dot(direction, &self.sun_direction).max(0.0);
         let glow = cos_angle.powf(8.0) * 0.35 + cos_angle.powf(64.0) * 0.6;
         color = color + SUN_GLOW * glow;
+        // El disco se SUMA al resplandor (en vez de reemplazarlo): si se
+        // reemplazara, quedaria mas oscuro que el halo que lo rodea y el sol
+        // se veria como un disco gris. Pasa de 255 y el tone mapping lo
+        // comprime a un blanco calido.
         if cos_angle > 0.9994 {
-            color = SUN_COLOR;
+            color = color + SUN_COLOR * 1.5;
         }
 
         color
