@@ -12,7 +12,7 @@ GPU ni shaders: 1447 cajas, 35 materiales y 10 luces.
 
 ## Video
 
-**Video de demostración:** _(pendiente: agregar el enlace)_
+**Video de demostración:** [Ver en YouTube](https://www.youtube.com/watch?v=EvghV7k645k)
 
 ## Cómo ejecutarlo
 
