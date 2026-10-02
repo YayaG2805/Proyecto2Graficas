@@ -1,5 +1,6 @@
 mod bvh;
 mod camera;
+mod characters;
 mod color;
 mod cube;
 mod dragon;

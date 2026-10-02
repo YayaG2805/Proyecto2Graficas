@@ -1,6 +1,7 @@
 use nalgebra_glm::{normalize, Vec3};
 
 use crate::bvh::Bvh;
+use crate::characters::{all_might, all_might_island};
 use crate::color::Color;
 use crate::cube::Cube;
 use crate::dragon::dragon;
@@ -198,7 +199,7 @@ pub fn build_scene() -> Scene {
     let mut materials = Vec::new();
     let p = Palette::new(&mut materials);
 
-    let parts: [PartBuilder; 31] = [
+    let parts: [PartBuilder; 32] = [
         floating_island,
         floating_rocks,
         pond,
@@ -226,6 +227,7 @@ pub fn build_scene() -> Scene {
         obsidian_circle,
         airship,
         fireflies,
+        heroes,
         pagoda_island,
         hanging_bridge,
         dragons,
@@ -1215,12 +1217,12 @@ fn obsidian_circle(o: &mut Vec<Cube>, p: &Palette) {
     add(o, (cx - 0.15, top + 1.15, cz - 0.15), (cx + 0.15, top + 1.45, cz + 0.15), p.magic);
 }
 
-// Dirigible de madera y tela cruzando el cielo detras del templo (vuela
+// Dirigible de madera y tela cruzando el cielo a la izquierda (vuela
 // hacia +x). Casco de barco escalonado (mas angosto abajo), globo alargado
 // hecho de capas que se angostan en las puntas, cuerdas que los unen,
 // timon, helice de metal y un farolillo en la proa.
 fn airship(o: &mut Vec<Cube>, p: &Palette) {
-    let (x, y, z) = (1.5, 9.0, -12.0); // centro de la cubierta
+    let (x, y, z) = (-16.0, 9.0, 0.0); // centro de la cubierta
 
     // Casco: tres capas, cada una mas corta y angosta hacia abajo, y una
     // proa que sobresale.
@@ -1280,4 +1282,15 @@ fn fireflies(o: &mut Vec<Cube>, p: &Palette) {
             add(o, (x - size, y - size, z - size), (x + size, y + size, z + size), p.firefly);
         }
     }
+}
+
+// Centro (x, altura del pasto, z) de la isla de All Might.
+const ALL_MIGHT_ISLAND: (f32, f32, f32) = (-9.0, -3.0, -17.0);
+
+// Personajes invitados (characters.rs): All Might gigante en su propia isla
+// detras del santuario, alzandose sobre el templo y mirando hacia el.
+fn heroes(o: &mut Vec<Cube>, p: &Palette) {
+    let (x, y, z) = ALL_MIGHT_ISLAND;
+    all_might_island(o, p, x, y, z);
+    all_might(o, p, Vec3::new(x, y, z), Heading::PlusZ, 1.75);
 }
