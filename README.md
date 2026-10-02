@@ -2,9 +2,10 @@
 
 Raytracer en Rust que renderiza en tiempo real un diorama voxel: un santuario
 en ruinas sobre una isla flotante, al atardecer, sobre un mar de nubes, con
-una pagoda en una isla vecina, un cerezo en flor y tres dragones volando
-alrededor. Todo se calcula en el CPU, sin GPU ni shaders: 836 cajas, 17
-materiales y 8 luces.
+una pagoda en una isla vecina, un cerezo en flor, tres dragones volando
+alrededor, un dirigible, farolillos de papel subiendo al cielo y un
+archipiélago de islas lejanas. Todo se calcula en el CPU, sin GPU ni
+shaders: 1181 cajas, 23 materiales y 9 luces.
 
 ![Vista general del santuario](docs/vista_general.png)
 
@@ -42,7 +43,7 @@ cargo run -- --bench
 | `A` / `D`, flechas o arrastrar con el mouse | Rotar alrededor del diorama |
 | `W` / `S` | Inclinar la cámara |
 | `Q` / `E` o rueda del mouse | Zoom |
-| `1` – `6` | Vistas predefinidas (transición suave) |
+| `1` – `7` | Vistas predefinidas (transición suave) |
 | `R` | Reiniciar la cámara |
 | `Espacio` | Giro automático |
 | `P` | Activa o desactiva la vista previa a media resolución mientras la cámara se mueve (desactivada, todo se renderiza a resolución completa: útil para grabar) |
@@ -53,13 +54,13 @@ cargo run -- --bench
 
 | Requisito | Dónde se ve | Implementación |
 |---|---|---|
-| Complejidad de la escena | 836 cajas: templo, pagoda, cerezo, fuente, puentes, dragones, islotes | `scene.rs` (una función por zona), `dragon.rs` |
-| Atractivo visual | Atardecer, luz cálida y fría, fuego, magia, bruma, antialiasing | `scene.rs: build_lights`, `skybox.rs`, `postprocess.rs` |
-| Rotación y zoom de la cámara | Teclado, mouse y vistas 1–6 | `camera.rs: OrbitCamera` |
+| Complejidad de la escena | 1181 cajas: templo, pagoda, cerezo, fuente con koi, puentes, dragones, dirigible, monolitos, islas lejanas | `scene.rs` (una función por zona), `dragon.rs` |
+| Atractivo visual | Atardecer, luz cálida y fría, fuego, magia, farolillos, bruma, relieve en las texturas, antialiasing | `scene.rs: build_lights`, `skybox.rs`, `postprocess.rs`, `renderer.rs: bump_normal` |
+| Rotación y zoom de la cámara | Teclado, mouse y vistas 1–7 | `camera.rs: OrbitCamera` |
 | 5 materiales con textura, albedo, specular, transparencia y reflectividad | Piedra, madera, metal, cristal y agua | `material.rs`, `procedural.rs` |
 | Refracción | Cristal del altar, obelisco y agua del estanque | `renderer.rs: refract` (ley de Snell) |
-| Reflexión | Metal dorado, agua y cristal | `renderer.rs: reflect` y rayos recursivos |
-| Skybox | Cielo de atardecer con sol, nubes, montañas y estrellas | `skybox.rs` |
+| Reflexión | Metal dorado, piso de mármol pulido, monolitos de obsidiana, tejas, agua y cristal; más reflejo al mirar de lado (Fresnel) | `renderer.rs: reflect` y rayos recursivos |
+| Skybox | Cielo de atardecer con sol, luna, nubes altas sombreadas, mar de nubes con relieve, montañas y estrellas | `skybox.rs` |
 
 ## Materiales
 
@@ -67,15 +68,20 @@ Cada material tiene su propia textura procedural de 32×32 px, generada por
 código en `procedural.rs` y guardada en `assets/textures/`, más los
 parámetros que definen cómo responde a la luz:
 
-| Material | Albedo (RGB) | Specular | Shininess | Reflectividad | Transparencia | IOR |
-|---|---|---|---|---|---|---|
-| **Piedra** | 255, 248, 235 | 0.10 | 8 | 0.02 | 0.00 | 1.00 |
-| **Madera** | 255, 230, 205 | 0.25 | 16 | 0.05 | 0.00 | 1.00 |
-| **Metal** (oro) | 255, 235, 190 | 0.90 | 128 | 0.65 | 0.00 | 1.00 |
-| **Cristal** | 225, 245, 255 | 1.00 | 256 | 0.10 | 0.85 | 1.50 |
-| **Agua** | 170, 215, 255 | 0.70 | 64 | 0.30 | 0.50 | 1.33 |
+| Material | Albedo (RGB) | Specular | Shininess | Reflectividad | Transparencia | IOR | Fresnel | Relieve |
+|---|---|---|---|---|---|---|---|---|
+| **Piedra** | 255, 248, 235 | 0.10 | 8 | 0.02 | 0.00 | 1.00 | 0.00 | 0.060 |
+| **Madera** | 255, 230, 205 | 0.25 | 16 | 0.05 | 0.00 | 1.00 | 0.15 | 0.024 |
+| **Metal** (oro) | 255, 235, 190 | 0.90 | 128 | 0.65 | 0.00 | 1.00 | 1.00 | 0.016 |
+| **Cristal** | 225, 245, 255 | 1.00 | 256 | 0.10 | 0.85 | 1.50 | 0.00 | 0.000 |
+| **Agua** | 195, 230, 255 | 0.70 | 64 | 0.25 | 0.60 | 1.33 | 0.00 | 0.000 |
 
-Además hay 12 materiales decorativos (no cuentan para la rúbrica), cada uno
+- **Fresnel:** cuánto aumenta el reflejo de una superficie opaca al mirarla
+  de lado (el cristal y el agua ya lo calculan con Schlick sobre su parte
+  transparente).
+- **Relieve:** profundidad del *bump mapping* en unidades de mundo.
+
+Además hay 18 materiales decorativos (no cuentan para la rúbrica), cada uno
 con su propia textura procedural:
 
 | Material | Dónde | Detalle |
@@ -89,10 +95,18 @@ con su propia textura procedural:
 | Membrana | Alas de los dragones | Translúcida (transparencia 0.35, n = 1.0): brilla a contraluz |
 | Fuego | Braseros, linternas, ventanas, ojos de dragón | Emisivo: brilla con luz propia y no da sombra |
 | Magia | Núcleos de cristal y orbes | Emisivo cian |
+| Mármol | Piso del templo, altar de los monolitos | Pulido: reflectividad 0.18 y Fresnel 0.8, vetas con ruido fractal periódico |
+| Obsidiana | Monolitos | Casi un espejo oscuro: reflectividad 0.5, Fresnel 1.0 |
+| Papel | Farolillos | Emisivo cálido con varillas de bambú |
+| Empedrado | Caminos y plazoleta | Diagrama de Voronoi, con relieve marcado entre las piedras |
+| Koi | Peces del estanque | Escamas naranjas con manchas blancas |
+| Luciérnaga | Nubes de luciérnagas | Emisivo verde-amarillo |
 
 La luz que llega a una superficie se reparte así: `reflectividad` se refleja
 como espejo, `transparencia` atraviesa el material y el resto se ve con el
-color propio (textura × albedo, iluminada con Lambert y Phong).
+color propio (textura × albedo, iluminada con Lambert y Phong). Las texturas
+se repiten sin costuras: el ruido de las nuevas (mármol, obsidiana, koi) es
+periódico, así que el borde derecho de la textura empata con el izquierdo.
 
 ## Galería
 
@@ -104,6 +118,8 @@ color propio (textura × albedo, iluminada con Lambert y Phong).
 | ![Desde abajo](docs/desde_abajo.png) **Desde abajo:** roca natural iluminada por el rebote de las nubes | ![Dragón](docs/dragon.png) **Dragón:** escamas de marfil, alas de membrana translúcida y ojos de fuego |
 | ![Pagoda](docs/pagoda.png) **Pagoda:** tejas vidriadas, ventanas encendidas y puente colgante | ![Cerezo](docs/cerezo.png) **Cerezo:** copa irregular y pétalos en el suelo y en el aire |
 | ![Cristales](docs/cristales.png) **Islote de cristales:** núcleos mágicos vistos a través del vidrio | ![Linternas](docs/linternas.png) **Linternas de piedra:** luz puntual cálida junto al portal |
+| ![Mármol](docs/marmol.png) **Piso de mármol:** refleja las columnas, el cristal y el cielo, más fuerte al mirarlo de lado (Fresnel) | ![Monolitos](docs/monolitos.png) **Monolitos de obsidiana:** espejos oscuros que se reflejan entre sí |
+| ![Dirigible](docs/dirigible.png) **Dirigible:** casco de madera, globo de tela y hélice de metal, con islas lejanas detrás | |
 
 ## Cómo funciona
 
@@ -123,26 +139,39 @@ de impacto, `cast_ray` calcula:
    pasa solo la fracción que deja pasar ese objeto: nada a través de la
    piedra, casi todo a través del cristal. El origen se desplaza un poco
    (*bias*) para evitar el *shadow acne*.
-4. **Reflexión:** un rayo secundario en la dirección `R = I - 2(I·N)N`,
-   filtrado por el color de la superficie (por eso el oro refleja dorado).
+4. **Reflexión:** un rayo secundario en la dirección `R = I - 2(I·N)N`. En
+   los metales se filtra por el color de la superficie (el oro refleja
+   dorado); en los demás materiales conserva el color de lo reflejado. En
+   las superficies opacas pulidas, el reflejo crece al mirarlas de lado
+   (Fresnel con la aproximación de Schlick, usando la reflectividad como
+   reflejo de frente): por eso el mármol y la obsidiana parecen espejos
+   cuando se ven a ras.
 5. **Refracción:** un rayo que atraviesa el material doblándose según la
    ley de Snell. Si el ángulo no permite salir, hay reflexión interna total.
    La aproximación de Schlick (Fresnel) decide cuánto se refleja y cuánto
    se refracta según el ángulo de vista.
 6. **Skybox:** si el rayo no toca nada, el color sale de un cielo
    procedural que solo depende de la dirección del rayo: degradado de
-   atardecer, disco del sol, nubes y montañas con ruido fractal propio, y
-   estrellas.
+   atardecer, sol, luna con mares, nubes altas y mar de nubes con ruido
+   fractal propio, montañas y estrellas. Las nubes se sombrean leyendo el
+   ruido un poco más hacia el sol: si ahí hay más nube, el punto queda en
+   sombra; si hay menos, es un borde iluminado.
 
 Los rebotes son recursivos, con un máximo de 4 (`MAX_DEPTH`).
 
 Detalles extra de calidad:
 
+- **Bump mapping:** el brillo de la textura se usa como mapa de alturas.
+  Con diferencias finitas se calcula su pendiente en `u` y en `v`, y la
+  normal se inclina sobre la tangente y la bitangente de la cara. Así las
+  juntas de la piedra, los surcos de la corteza y el empedrado reciben la
+  luz como si tuvieran relieve, aunque las cajas sean planas.
 - **Ondas en el agua:** la normal se inclina con una suma de senos según la
   posición (como un *normal map* calculado), así el reflejo y la refracción
   ondulan.
 - **Bruma de distancia:** lo lejano se funde con el color del cielo
-  (`1 - e^(-densidad·d)`), lo que da profundidad.
+  (`1 - e^(-densidad·d)`), lo que da profundidad: las islas lejanas del
+  archipiélago se ven claras y perdidas en el aire.
 - **Post-proceso** (`postprocess.rs`): *tone mapping* con rodilla suave, que
   comprime las luces muy brillantes en vez de cortarlas en blanco, y una
   viñeta sutil.
@@ -155,14 +184,20 @@ Detalles extra de calidad:
 
 ## Rendimiento
 
-En un i7-12700H (20 hilos), a 800×600:
+En un i7-12700H (20 hilos), a 800×600, medido con `--bench`:
 
 | Vista | Tiempo por cuadro |
 |---|---|
-| General | ~33 ms |
-| Altar y cristal | ~81 ms |
-| Estanque | ~83 ms |
-| Contraluz, obelisco, desde abajo | ~22–25 ms |
+| General | ~117 ms |
+| Altar y cristal | ~250 ms |
+| Estanque | ~225 ms |
+| Contraluz, obelisco, desde abajo, monolitos | ~70–100 ms |
+
+Los tiempos varían bastante según el modo de energía del equipo: medida
+justo antes, en las mismas condiciones, la versión anterior de la escena
+(836 cajas, sin mármol ni bump mapping) promediaba ~90 ms. La diferencia
+sale sobre todo de los reflejos nuevos (el piso de mármol lanza un rayo
+reflejado en cada píxel) y de las cajas extra.
 
 Esos tiempos son sin antialiasing, que es como se renderiza mientras la
 cámara se mueve. El cuadro quieto con antialiasing tarda unas 4 veces más,
@@ -189,16 +224,16 @@ commit, con su medición):
 |---|---|
 | `main.rs` | Ventana, controles, vistas predefinidas, modos `--screenshot` y `--bench` |
 | `camera.rs` | Cámara orbital con movimiento suavizado |
-| `renderer.rs` | `cast_ray` (iluminación, sombras, reflexión, refracción, ondas, bruma) y render en paralelo con antialiasing |
+| `renderer.rs` | `cast_ray` (iluminación, sombras, reflexión con Fresnel, refracción, bump mapping, ondas, bruma) y render en paralelo con antialiasing |
 | `postprocess.rs` | Tone mapping y viñeta |
 | `dragon.rs` | Modelo de dragón en coordenadas locales |
 | `scene.rs` | Construcción del diorama, luces, búsqueda de impactos y sombras |
 | `bvh.rs` | Jerarquía de cajas envolventes |
 | `cube.rs` | Caja alineada a los ejes: intersección por el método *slab*, normal y UV |
 | `material.rs` | Parámetros de cada material |
-| `procedural.rs` | Texturas pixel-art y ruido (hash, value noise, ruido fractal) |
+| `procedural.rs` | Texturas pixel-art y ruido (hash, value noise, ruido fractal, versiones periódicas y Voronoi) |
 | `skybox.rs` | Cielo procedural |
-| `texture.rs` | Carga, muestreo y guardado de texturas |
+| `texture.rs` | Carga, muestreo, alturas bilineales y guardado de texturas |
 | `light.rs` | Luces lejanas y puntuales con atenuación |
 | `color.rs`, `framebuffer.rs`, `ray_intersect.rs` | Tipos básicos |
 
