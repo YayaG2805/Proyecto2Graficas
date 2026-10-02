@@ -48,6 +48,7 @@ cargo run -- --bench
 | `R` | Reiniciar la cámara |
 | `Espacio` | Giro automático |
 | `P` | Activa o desactiva la vista previa a media resolución mientras la cámara se mueve (desactivada, todo se renderiza a resolución completa: útil para grabar) |
+| `F11` | Pantalla completa: la imagen se escala para llenar el monitor sin deformarse (sigue renderizándose a 800×600) |
 | `F12` | Guardar captura en `screenshots/` |
 | `H` | Mostrar u ocultar la ayuda |
 
@@ -152,14 +153,18 @@ personajes pertenecen a sus autores).
   franjas blancas y rojas a los lados de las piernas y botas rojas. La cara
   queda en sombra con los ojos brillando (material de magia), la sonrisa de
   dientes blancos y los dos mechones en V hechos de escalones que se abren.
-- **Asta** (*Black Clover*): en la isla satélite, en su forma de
-  antimagia. Media cara negra con el ojo rojo encendido y el otro verde,
+- **Asta** (*Black Clover*): en el patio frente a la escalinata del
+  templo, entre el cerezo y las cajas, a escala 1.5 y en su forma de
+  antimagia. El lugar se eligió para que quede al centro de la vista
+  general sin tapar el cuadro de la vista del altar, y mira hacia el puente
+  para que la espada apunte al pasto abierto y no se meta en el cerezo. Media cara negra con el ojo rojo encendido y el otro verde,
   bandana con emblema, cabello blanco en picos, cuerno negro de obsidiana y
   la capa de los Toros Negros con borde y emblema dorados. La espada mata
   demonios cruza en diagonal frente a él: como las cajas no se pueden
   inclinar, la hoja es una escalera de cajas a lo largo de su dirección,
   con mellas en el filo y el mango vendado. Lo rodea un aura de chispas y
-  lenguas de antimagia, con una luz puntual roja que tiñe la isla.
+  lenguas de antimagia (recogida en la espalda), con una luz puntual roja
+  que tiñe el patio.
 
 ## Cómo funciona
 
