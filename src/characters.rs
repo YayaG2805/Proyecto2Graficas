@@ -174,3 +174,149 @@ pub fn all_might_island(o: &mut Vec<Cube>, p: &Palette, cx: f32, top: f32, cz: f
         }
     }
 }
+
+// Asta en su forma de antimagia, sosteniendo la espada mata demonios en
+// diagonal frente a el (con la mano izquierda, la hoja sube hacia su
+// derecha). Media cara cubierta de antimagia negra con el ojo rojo
+// encendido, el otro ojo verde, sonrisa desafiante, bandana con emblema,
+// cabello blanco en picos y el cuerno negro; la capa de los Toros Negros con
+// borde dorado. Alrededor, un aura roja y negra de antimagia.
+pub fn asta(o: &mut Vec<Cube>, p: &Palette, origin: Vec3, heading: Heading, scale: f32) {
+    let d = Placement::new(origin, heading, scale);
+
+    // ---- Piernas abiertas (postura de combate) ----
+    for side in [-1.0f32, 1.0] {
+        let c = 0.16 * side;
+        d.place(o, (-0.09, 0.0, c - 0.09), (0.14, 0.28, c + 0.09), p.leather); // bota
+        d.place(o, (-0.08, 0.28, c - 0.085), (0.09, 0.95, c + 0.085), p.black_cloth); // pantalon
+    }
+
+    // ---- Torso, cinturon y capa de los Toros Negros ----
+    d.place(o, (-0.11, 0.95, -0.21), (0.11, 1.32, 0.21), p.black_cloth);
+    d.place(o, (-0.12, 1.3, -0.23), (0.12, 1.5, 0.23), p.black_cloth); // pecho
+    d.place(o, (-0.12, 0.9, -0.22), (0.12, 0.98, 0.22), p.leather); // cinturon
+    d.place(o, (0.12, 0.91, -0.04), (0.13, 0.97, 0.04), p.metal); // hebilla
+    d.place(o, (-0.16, 0.92, -0.25), (-0.12, 1.53, 0.25), p.black_cloth); // capa
+    d.place(o, (-0.165, 0.9, -0.255), (-0.115, 0.94, 0.255), p.metal); // borde dorado
+    d.place(o, (-0.16, 1.47, -0.28), (0.14, 1.56, 0.28), p.black_cloth); // hombrera
+    d.place(o, (-0.19, 1.5, -0.13), (-0.06, 1.63, 0.13), p.black_cloth); // capucha recogida
+    // Emblema del toro en la espalda: cabeza dorada con dos cuernos.
+    d.place(o, (-0.17, 1.15, -0.05), (-0.16, 1.27, 0.05), p.metal);
+    for side in [-1.0f32, 1.0] {
+        let (a, b) = (side * 0.05, side * 0.11);
+        d.place(o, (-0.17, 1.25, a.min(b)), (-0.16, 1.31, a.max(b)), p.metal);
+    }
+
+    // ---- Cabeza ----
+    d.place(o, (-0.06, 1.5, -0.07), (0.07, 1.6, 0.07), p.skin); // cuello
+    d.place(o, (-0.14, 1.6, -0.14), (0.15, 1.95, 0.14), p.skin);
+    // Mitad derecha de la cara cubierta de antimagia, con el ojo rojo.
+    d.place(o, (0.15, 1.68, 0.0), (0.16, 1.86, 0.15), p.black_cloth);
+    d.place(o, (0.16, 1.76, 0.04), (0.17, 1.81, 0.1), p.antimagic);
+    // Ojo izquierdo verde (brilla con luz propia, como en la imagen).
+    d.place(o, (0.15, 1.76, -0.1), (0.16, 1.81, -0.04), p.firefly);
+    // Ceja fruncida y sonrisa con los dientes apretados.
+    d.place(o, (0.15, 1.82, -0.12), (0.165, 1.84, -0.02), p.black_cloth);
+    d.place(o, (0.15, 1.64, -0.08), (0.165, 1.68, 0.07), p.suit_white);
+    d.place(o, (0.165, 1.655, -0.08), (0.168, 1.665, 0.07), p.black_cloth);
+    // Bandana negra con el emblema rojo al frente.
+    d.place(o, (-0.15, 1.82, -0.15), (0.16, 1.89, 0.15), p.black_cloth);
+    d.place(o, (0.16, 1.83, -0.06), (0.17, 1.88, 0.03), p.suit_red);
+    d.place(o, (-0.22, 1.8, -0.03), (-0.15, 1.86, 0.03), p.black_cloth); // nudo atras
+
+    // ---- Cabello blanco en picos ----
+    d.place(o, (-0.16, 1.88, -0.16), (0.15, 2.0, 0.16), p.hair_white);
+    // Picos: (f, s, alto, medio ancho). Suben y la punta se corre hacia atras.
+    let spikes = [
+        (0.08, -0.1, 0.16, 0.05),
+        (0.05, 0.02, 0.2, 0.05),
+        (-0.02, -0.14, 0.18, 0.05),
+        (-0.1, 0.0, 0.22, 0.06),
+        (-0.12, -0.12, 0.17, 0.05),
+        (-0.16, 0.12, 0.14, 0.05),
+        (0.1, 0.12, 0.12, 0.04),
+        (-0.05, 0.16, 0.13, 0.04),
+        (0.02, -0.18, 0.12, 0.04),
+    ];
+    for (f, s, h, w) in spikes {
+        d.place(o, (f - w, 1.98, s - w), (f + w, 1.98 + h, s + w), p.hair_white);
+        let (tf, tw) = (f - 0.03, w * 0.5);
+        d.place(o, (tf - tw, 1.98 + h, s - tw), (tf + tw, 1.98 + h + 0.06, s + tw), p.hair_white);
+    }
+    // Mechon cayendo sobre la frente.
+    d.place(o, (0.13, 1.88, -0.14), (0.17, 1.95, -0.02), p.hair_white);
+    // Cuerno negro que sale del lado derecho de la cabeza y se curva arriba.
+    let horn = [(0.0, 0.15, 1.95), (-0.01, 0.19, 2.07), (-0.03, 0.22, 2.19), (-0.06, 0.23, 2.31), (-0.09, 0.22, 2.43), (-0.12, 0.2, 2.53)];
+    for (i, (f, s, y)) in horn.iter().enumerate() {
+        let w = 0.055 - 0.008 * i as f32;
+        d.place(o, (f - w, *y, s - w), (f + w, y + 0.11, s + w), p.obsidian);
+    }
+
+    // ---- Brazo izquierdo: sostiene la espada frente al cuerpo ----
+    d.place(o, (-0.06, 1.2, -0.31), (0.06, 1.5, -0.21), p.black_cloth);
+    d.place(o, (0.0, 1.08, -0.34), (0.3, 1.18, -0.25), p.skin); // antebrazo
+    let hand = (0.36, 1.12, -0.3); // centro del puno (f, y, s)
+    d.place(o, (hand.0 - 0.06, hand.1 - 0.08, hand.2 - 0.07), (hand.0 + 0.06, hand.1 + 0.08, hand.2 + 0.07), p.skin);
+
+    // ---- Brazo derecho: cubierto de antimagia (negro y rojo) ----
+    d.place(o, (-0.06, 1.2, 0.21), (0.06, 1.5, 0.31), p.black_cloth);
+    d.place(o, (-0.06, 0.92, 0.22), (0.06, 1.2, 0.32), p.antimagic);
+    d.place(o, (-0.07, 0.82, 0.21), (0.07, 0.94, 0.33), p.black_cloth); // puno
+
+    // ---- Espada mata demonios ----
+    // La hoja sube en diagonal (en el plano frente a Asta) desde el puno
+    // hacia su derecha. Las cajas no se pueden inclinar, asi que la hoja es
+    // una escalera de cajas superpuestas a lo largo de la direccion (como la
+    // cuerda de la guirnalda); de lejos se lee como una hoja inclinada.
+    let (dir_s, dir_y) = (0.82f32, 0.572f32); // direccion de la hoja (normalizada, ~35 grados)
+    let along = |t: f32| (hand.2 + dir_s * t, hand.1 + dir_y * t); // (s, y) a distancia t
+    let thickness = 0.03; // medio grosor de la hoja (en f)
+    let step = 0.09;
+    // Mango vendado hacia abajo del puno y pomo de hierro.
+    for k in 1..=3 {
+        let (s, y) = along(-(k as f32) * step * 0.8);
+        d.place(o, (hand.0 - 0.035, y - 0.05, s - 0.04), (hand.0 + 0.035, y + 0.05, s + 0.04), p.wrap);
+    }
+    let (s, y) = along(-4.0 * step * 0.8);
+    d.place(o, (hand.0 - 0.05, y - 0.05, s - 0.05), (hand.0 + 0.05, y + 0.05, s + 0.05), p.demon_iron);
+    // Guarda: bloque ancho justo sobre el puno.
+    let (s, y) = along(0.1);
+    d.place(o, (hand.0 - 0.07, y - 0.08, s - 0.12), (hand.0 + 0.07, y + 0.08, s + 0.12), p.demon_iron);
+    // Hoja: ancha y pesada; la punta es mas angosta y tiene mellas.
+    let blade_steps = 18;
+    for k in 0..blade_steps {
+        let (s, y) = along(0.18 + k as f32 * step);
+        let width = if k + 2 >= blade_steps { 0.09 } else { 0.15 };
+        d.place(o, (hand.0 - thickness, y - width, s - width * 0.7), (hand.0 + thickness, y + width, s + width * 0.7), p.demon_iron);
+        // Mellas: picos sueltos en el filo superior, cada tanto.
+        if k % 4 == 2 {
+            let (es, ey) = (s - dir_y * 0.17, y + dir_s * 0.17);
+            d.place(o, (hand.0 - thickness * 0.8, ey - 0.03, es - 0.03), (hand.0 + thickness * 0.8, ey + 0.03, es + 0.03), p.demon_iron);
+        }
+    }
+
+    // ---- Aura de antimagia ----
+    // Chispas y lenguas rojas y negras alrededor del cuerpo, en posiciones
+    // fijas sacadas del hash. Las lenguas son cajas altas y delgadas (llamas
+    // que suben); las chispas, cubitos sueltos.
+    for i in 0..36 {
+        let angle = procedural::hash(i, 0, 361) * std::f32::consts::TAU;
+        let radius = 0.35 + 0.45 * procedural::hash(i, 1, 362);
+        let f = angle.cos() * radius - 0.1;
+        let s = angle.sin() * radius;
+        let y = 0.1 + 2.1 * procedural::hash(i, 2, 363);
+        let size = 0.02 + 0.03 * procedural::hash(i, 3, 364);
+        let tall = if i % 3 == 0 { 4.0 } else { 1.0 };
+        let material = if i % 4 == 0 { p.black_cloth } else { p.antimagic };
+        d.place(o, (f - size, y - size, s - size), (f + size, y + size * tall, s + size), material);
+    }
+    // Chispas que se desprenden de la hoja, delante de ella.
+    for i in 0..10 {
+        let t = 0.3 + 1.5 * procedural::hash(i, 4, 365);
+        let off = (procedural::hash(i, 5, 366) - 0.5) * 0.5;
+        let (s, y) = along(t);
+        let (s, y) = (s - dir_y * off, y + dir_s * off);
+        let size = 0.02 + 0.02 * procedural::hash(i, 6, 367);
+        d.place(o, (hand.0 + 0.05, y - size, s - size), (hand.0 + 0.05 + 2.0 * size, y + size, s + size), p.antimagic);
+    }
+}

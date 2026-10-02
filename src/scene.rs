@@ -1,7 +1,7 @@
 use nalgebra_glm::{normalize, Vec3};
 
 use crate::bvh::Bvh;
-use crate::characters::{all_might, all_might_island};
+use crate::characters::{all_might, all_might_island, asta};
 use crate::color::Color;
 use crate::cube::Cube;
 use crate::dragon::dragon;
@@ -272,6 +272,8 @@ fn build_lights() -> Vec<Light> {
         Light::point(Vec3::new(0.0, 3.15, -2.0), 0.7, Color::new(120.0, 230.0, 255.0), 3.5),
         // Orbe del circulo de obsidiana: luz cian sobre el altar.
         Light::point(Vec3::new(OBSIDIAN_ISLAND.0, OBSIDIAN_ISLAND.1 + 1.3, OBSIDIAN_ISLAND.2), 0.9, Color::new(120.0, 230.0, 255.0), 3.5),
+        // Aura de antimagia de Asta: luz roja que tine la isla satelite.
+        Light::point(Vec3::new(ASTA_POSITION.0, ASTA_POSITION.1 + 1.5, ASTA_POSITION.2 + 0.5), 0.8, Color::new(255.0, 60.0, 60.0), 3.0),
         // Linternas de piedra junto al portal (posiciones en STONE_LANTERNS).
         Light::point(lantern_light(STONE_LANTERNS[0]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
         Light::point(lantern_light(STONE_LANTERNS[1]), 0.9, Color::new(255.0, 175.0, 90.0), 3.0),
@@ -1287,10 +1289,16 @@ fn fireflies(o: &mut Vec<Cube>, p: &Palette) {
 // Centro (x, altura del pasto, z) de la isla de All Might.
 const ALL_MIGHT_ISLAND: (f32, f32, f32) = (-9.0, -3.0, -17.0);
 
+// Posicion de los pies de Asta, en la isla satelite junto al farol.
+const ASTA_POSITION: (f32, f32, f32) = (11.6, 0.0, 0.2);
+
 // Personajes invitados (characters.rs): All Might gigante en su propia isla
-// detras del santuario, alzandose sobre el templo y mirando hacia el.
+// detras del santuario, alzandose sobre el templo y mirando hacia el, y
+// Asta con la espada mata demonios en la isla satelite.
 fn heroes(o: &mut Vec<Cube>, p: &Palette) {
     let (x, y, z) = ALL_MIGHT_ISLAND;
     all_might_island(o, p, x, y, z);
     all_might(o, p, Vec3::new(x, y, z), Heading::PlusZ, 1.75);
+    let (x, y, z) = ASTA_POSITION;
+    asta(o, p, Vec3::new(x, y, z), Heading::PlusZ, 1.3);
 }
