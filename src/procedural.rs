@@ -605,3 +605,98 @@ pub fn koi() -> Texture {
         color * (scale_row * (0.95 + 0.06 * hash(x, y, 242)))
     })
 }
+
+// PIEL: tono calido con manchas suaves (ruido periodico) y poros sueltos
+// apenas mas oscuros. Sin patrones fuertes para que no parezca tela.
+pub fn skin() -> Texture {
+    generate(|x, y| {
+        let base = Color::new(235.0, 180.0, 140.0);
+        let blotch = 0.94 + 0.08 * periodic_noise(x as f32 / 8.0, y as f32 / 8.0, 4, 281);
+        let pore = if hash(x, y, 282) > 0.93 { 0.93 } else { 1.0 };
+        base * (blotch * pore)
+    })
+}
+
+// Mechones de cabello: franjas verticales de 2 px (la v sigue el eje y, asi
+// que en la cabeza caen hacia abajo), cada mechon con su tono, con brillo en
+// una banda y puntas mas oscuras. `base` es el color del cabello.
+fn hair(base: Color, seed: u32) -> Texture {
+    generate(move |x, y| {
+        let strand = x / 2;
+        let tone = 0.8 + 0.35 * hash(strand, 0, seed);
+        // Cada mechon ondula un poco: su linea de brillo baja o sube.
+        let shine_y = (hash(strand, 1, seed) * SIZE as f32) as i32;
+        let shine = if (y - shine_y).rem_euclid(SIZE) < 3 { 1.2 } else { 1.0 };
+        let edge = if x % 2 == 0 { 0.88 } else { 1.0 };
+        base * (tone * shine * edge * (0.95 + 0.06 * hash(x, y, seed + 1)))
+    })
+}
+
+// CABELLO DORADO de All Might.
+pub fn hair_gold() -> Texture {
+    hair(Color::new(250.0, 205.0, 70.0), 291)
+}
+
+// CABELLO BLANCO cenizo de Asta en su forma de antimagia.
+pub fn hair_white() -> Texture {
+    hair(Color::new(235.0, 232.0, 228.0), 301)
+}
+
+// TELA DE TRAJE (spandex): casi blanca para que el albedo de cada material
+// le de el color (azul, rojo, blanco, amarillo, negro). Trama fina y un
+// brillo satinado en bandas diagonales suaves, como tela elastica tensa.
+pub fn spandex() -> Texture {
+    generate(|x, y| {
+        let weave = if (x + y) % 2 == 0 { 1.0 } else { 0.95 };
+        let sheen = 0.93 + 0.1 * ((x + y) as f32 * TAU / 16.0).sin().max(0.0);
+        Color::new(240.0, 240.0, 240.0) * (weave * sheen * (0.97 + 0.04 * hash(x, y, 311)))
+    })
+}
+
+// CUERO: cafe con arrugas oscuras onduladas, poros y una costura punteada.
+pub fn leather() -> Texture {
+    generate(|x, y| {
+        let base = Color::new(120.0, 75.0, 45.0);
+        if y % 16 == 2 && x % 4 < 2 {
+            return Color::new(200.0, 170.0, 120.0); // costura
+        }
+        let crease = periodic_fractal(x as f32 / 8.0, y as f32 / 8.0, 4, 321);
+        let wrinkle = if (crease - 0.5).abs() < 0.04 { 0.7 } else { 1.0 };
+        base * (wrinkle * (0.85 + 0.25 * crease) * (0.95 + 0.08 * hash(x, y, 322)))
+    })
+}
+
+// HIERRO DEMONIACO (espada mata demonios): metal casi negro, rayado, con
+// grietas rojas encendidas que serpentean (lineas donde el ruido periodico
+// cruza un valor, igual que las vetas del marmol) y manchas de oxido.
+pub fn demon_iron() -> Texture {
+    generate(|x, y| {
+        let crack = periodic_fractal(x as f32 / 4.0, y as f32 / 4.0, 8, 331);
+        if (crack - 0.5).abs() < 0.035 {
+            return Color::new(255.0, 40.0, 50.0); // grieta encendida
+        }
+        if (crack - 0.5).abs() < 0.07 {
+            return Color::new(120.0, 15.0, 25.0); // borde de la grieta
+        }
+        let base = Color::new(40.0, 36.0, 40.0);
+        let rust = periodic_noise(x as f32 / 8.0, y as f32 / 8.0, 4, 332);
+        let scratch = if hash(x, y / 4, 333) > 0.95 { 1.6 } else { 1.0 };
+        mix(base, Color::new(70.0, 35.0, 30.0), ((rust - 0.6) * 3.0).clamp(0.0, 1.0)) * scratch
+    })
+}
+
+// VENDAS del mango: tiras de tela cruda enrolladas en diagonal (periodo
+// 8 px), con sombra en el borde de cada vuelta.
+pub fn wrap() -> Texture {
+    generate(|x, y| {
+        let band = (x + y).rem_euclid(8);
+        let base = Color::new(205.0, 185.0, 150.0);
+        let shade = match band {
+            0 => 0.55,
+            1 => 0.8,
+            7 => 1.1,
+            _ => 1.0,
+        };
+        base * (shade * (0.92 + 0.1 * hash(x, y, 341)))
+    })
+}
