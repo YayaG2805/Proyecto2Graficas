@@ -48,6 +48,11 @@ pub struct Material {
     // dorado). En los demas materiales (dielectricos: ceramica, agua,
     // marmol...) el reflejo conserva el color de lo reflejado.
     pub metallic: bool,
+    // Brillo propio que se SUMA a la iluminacion (a diferencia de
+    // `emission`, que la reemplaza). Como se multiplica por el color de la
+    // textura, las partes claras brillan mucho y las oscuras casi nada: asi
+    // las grietas rojas de la espada de Asta brillan y el hierro negro no.
+    pub glow: f32,
 }
 
 impl Material {
@@ -75,6 +80,7 @@ impl Material {
             fresnel: 0.0,
             bump: 0.06,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -94,6 +100,7 @@ impl Material {
             fresnel: 0.15,
             bump: 0.024,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -113,6 +120,7 @@ impl Material {
             fresnel: 1.0,
             bump: 0.016,
             metallic: true,
+            glow: 0.0,
         }
     }
 
@@ -133,6 +141,7 @@ impl Material {
             fresnel: 0.0,
             bump: 0.0,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -153,6 +162,7 @@ impl Material {
             fresnel: 0.0,
             bump: 0.0,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -194,6 +204,7 @@ impl Material {
             fresnel: 0.4,
             bump: 0.04,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -215,6 +226,7 @@ impl Material {
             fresnel: 0.0,
             bump: 0.0,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -235,6 +247,7 @@ impl Material {
             fresnel: 0.7,
             bump: 0.05,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -271,6 +284,7 @@ impl Material {
             fresnel: 0.8,
             bump: 0.01,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -332,6 +346,7 @@ impl Material {
             fresnel: 0.0,
             bump: 0.03,
             metallic: false,
+            glow: 0.0,
         }
     }
 
@@ -353,6 +368,7 @@ impl Material {
             fresnel: 0.0,
             bump: 0.0,
             metallic: false,
+            glow: 0.0,
         }
     }
 }

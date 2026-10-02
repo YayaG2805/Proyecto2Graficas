@@ -201,6 +201,12 @@ pub fn cast_ray(ray_origin: &Vec3, ray_direction: &Vec3, scene: &Scene, depth: u
         specular = specular + light.color * (material.specular * specular_intensity * light_intensity);
     }
 
+    // Brillo propio parcial (ver Material::glow): se suma al color de la
+    // superficie despues de las luces, proporcional al color de la textura.
+    if material.glow > 0.0 {
+        surface = surface + base_color * material.glow;
+    }
+
     let transparency = material.transparency;
 
     // Fresnel en superficies opacas (Schlick): de frente se refleja solo
