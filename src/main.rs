@@ -6,6 +6,7 @@ mod dragon;
 mod framebuffer;
 mod light;
 mod material;
+mod placement;
 mod postprocess;
 mod procedural;
 mod ray_intersect;
