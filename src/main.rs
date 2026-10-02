@@ -153,12 +153,12 @@ fn draw_help(d: &mut RaylibDrawHandle, render_ms: f32, auto_rotate: bool, previe
 // uno tiene su propia textura, albedo, specular, transparencia, etc.).
 fn print_material_table(scene: &Scene) {
     println!(
-        "{:<10} {:>15} {:>8} {:>9} {:>8} {:>8} {:>5} {:>8} {:>8} {:>7}",
+        "{:<16} {:>15} {:>8} {:>9} {:>8} {:>8} {:>5} {:>8} {:>8} {:>7}",
         "Material", "albedo (RGB)", "specular", "shininess", "reflect", "transp", "n", "emision", "fresnel", "relieve"
     );
     for m in &scene.materials {
         println!(
-            "{:<10} {:>5.0},{:>4.0},{:>4.0} {:>8.2} {:>9.0} {:>8.2} {:>8.2} {:>5.2} {:>8.2} {:>8.2} {:>7.3}",
+            "{:<16} {:>5.0},{:>4.0},{:>4.0} {:>8.2} {:>9.0} {:>8.2} {:>8.2} {:>5.2} {:>8.2} {:>8.2} {:>7.3}",
             m.name, m.albedo.r, m.albedo.g, m.albedo.b, m.specular, m.shininess, m.reflectivity,
             m.transparency, m.refractive_index, m.emission, m.fresnel, m.bump
         );

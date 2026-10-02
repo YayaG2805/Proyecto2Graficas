@@ -54,6 +54,18 @@ pub struct Palette {
     pub cobble: MaterialId,
     pub koi: MaterialId,
     pub firefly: MaterialId,
+    pub skin: MaterialId,
+    pub hair_gold: MaterialId,
+    pub hair_white: MaterialId,
+    pub suit_blue: MaterialId,
+    pub suit_red: MaterialId,
+    pub suit_white: MaterialId,
+    pub suit_yellow: MaterialId,
+    pub black_cloth: MaterialId,
+    pub leather: MaterialId,
+    pub demon_iron: MaterialId,
+    pub wrap: MaterialId,
+    pub antimagic: MaterialId,
 }
 
 impl Palette {
@@ -91,6 +103,20 @@ impl Palette {
             koi: register("koi", procedural::koi, Material::koi),
             // Reusa el PNG del fuego (mismo archivo, otro albedo).
             firefly: register("fire", procedural::fire, Material::firefly),
+            // Personajes. Las variantes del traje comparten la textura
+            // spandex (casi blanca) y cambian solo el albedo.
+            skin: register("skin", procedural::skin, Material::skin),
+            hair_gold: register("hair_gold", procedural::hair_gold, Material::hair_gold),
+            hair_white: register("hair_white", procedural::hair_white, Material::hair_white),
+            suit_blue: register("spandex", procedural::spandex, Material::suit_blue),
+            suit_red: register("spandex", procedural::spandex, Material::suit_red),
+            suit_white: register("spandex", procedural::spandex, Material::suit_white),
+            suit_yellow: register("spandex", procedural::spandex, Material::suit_yellow),
+            black_cloth: register("spandex", procedural::spandex, Material::black_cloth),
+            leather: register("leather", procedural::leather, Material::leather),
+            demon_iron: register("demon_iron", procedural::demon_iron, Material::demon_iron),
+            wrap: register("wrap", procedural::wrap, Material::wrap),
+            antimagic: register("obsidian", procedural::obsidian, Material::antimagic),
         }
     }
 }

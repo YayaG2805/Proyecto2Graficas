@@ -671,11 +671,11 @@ pub fn leather() -> Texture {
 // cruza un valor, igual que las vetas del marmol) y manchas de oxido.
 pub fn demon_iron() -> Texture {
     generate(|x, y| {
-        let crack = periodic_fractal(x as f32 / 4.0, y as f32 / 4.0, 8, 331);
-        if (crack - 0.5).abs() < 0.035 {
+        let crack = periodic_fractal(x as f32 / 8.0, y as f32 / 8.0, 4, 331);
+        if (crack - 0.5).abs() < 0.018 {
             return Color::new(255.0, 40.0, 50.0); // grieta encendida
         }
-        if (crack - 0.5).abs() < 0.07 {
+        if (crack - 0.5).abs() < 0.04 {
             return Color::new(120.0, 15.0, 25.0); // borde de la grieta
         }
         let base = Color::new(40.0, 36.0, 40.0);

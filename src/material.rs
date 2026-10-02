@@ -325,6 +325,95 @@ impl Material {
         Material { name: "Luciernaga", albedo: Color::new(210.0, 255.0, 120.0), emission: 1.5, ..Material::fire(texture) }
     }
 
+    // ---- Personajes ----
+
+    // Piel: mate con un brillo suave y ancho (piel con algo de grasa).
+    pub fn skin(texture: Texture) -> Self {
+        Material { name: "Piel", albedo: Color::new(255.0, 255.0, 255.0), specular: 0.25, shininess: 12.0, bump: 0.008, ..Material::grass(texture) }
+    }
+
+    // Cabello: brillo en bandas y relieve marcado entre mechones.
+    fn hair(texture: Texture, name: &'static str) -> Self {
+        Material { name, albedo: Color::new(255.0, 255.0, 255.0), specular: 0.45, shininess: 24.0, bump: 0.035, ..Material::grass(texture) }
+    }
+
+    pub fn hair_gold(texture: Texture) -> Self {
+        Material::hair(texture, "Cabello dorado")
+    }
+
+    pub fn hair_white(texture: Texture) -> Self {
+        Material::hair(texture, "Cabello blanco")
+    }
+
+    // Traje de heroe (spandex): satinado, con un poco de Fresnel. La textura
+    // es casi blanca y cada variante le da su color con el albedo.
+    fn suit(texture: Texture, name: &'static str, albedo: Color) -> Self {
+        Material {
+            name,
+            albedo,
+            specular: 0.45,
+            shininess: 40.0,
+            reflectivity: 0.03,
+            fresnel: 0.2,
+            bump: 0.006,
+            ..Material::grass(texture)
+        }
+    }
+
+    pub fn suit_blue(texture: Texture) -> Self {
+        Material::suit(texture, "Traje azul", Color::new(45.0, 55.0, 140.0))
+    }
+
+    pub fn suit_red(texture: Texture) -> Self {
+        Material::suit(texture, "Traje rojo", Color::new(215.0, 35.0, 45.0))
+    }
+
+    pub fn suit_white(texture: Texture) -> Self {
+        Material::suit(texture, "Traje blanco", Color::new(250.0, 250.0, 250.0))
+    }
+
+    pub fn suit_yellow(texture: Texture) -> Self {
+        Material::suit(texture, "Traje amarillo", Color::new(245.0, 205.0, 55.0))
+    }
+
+    // Tela negra (ropa y bandana de Asta, sombra de los ojos de All Might).
+    pub fn black_cloth(texture: Texture) -> Self {
+        Material { name: "Tela negra", specular: 0.15, reflectivity: 0.0, fresnel: 0.0, ..Material::suit(texture, "", Color::new(45.0, 42.0, 52.0)) }
+    }
+
+    // Cuero de botas y cinturon: brillo medio y relieve de arrugas.
+    pub fn leather(texture: Texture) -> Self {
+        Material { name: "Cuero", albedo: Color::new(255.0, 255.0, 255.0), specular: 0.35, shininess: 20.0, bump: 0.03, ..Material::grass(texture) }
+    }
+
+    // Hierro demoniaco de la espada mata demonios: metal oscuro y opaco que
+    // refleja un poco, con relieve, y cuyas grietas rojas brillan (glow).
+    pub fn demon_iron(texture: Texture) -> Self {
+        Material {
+            name: "Hierro demoniaco",
+            albedo: Color::new(255.0, 255.0, 255.0),
+            specular: 0.5,
+            shininess: 30.0,
+            reflectivity: 0.12,
+            fresnel: 0.5,
+            bump: 0.05,
+            metallic: true,
+            glow: 0.9,
+            ..Material::grass(texture)
+        }
+    }
+
+    // Vendas del mango de la espada: tela mate con relieve.
+    pub fn wrap(texture: Texture) -> Self {
+        Material { name: "Vendas", albedo: Color::new(255.0, 255.0, 255.0), bump: 0.03, ..Material::grass(texture) }
+    }
+
+    // Antimagia: el aura roja y negra de Asta. Emisiva con la textura de la
+    // obsidiana tenida de rojo: manchas negras y destellos encendidos.
+    pub fn antimagic(texture: Texture) -> Self {
+        Material { name: "Antimagia", albedo: Color::new(255.0, 70.0, 70.0), emission: 1.4, ..Material::fire(texture) }
+    }
+
     // Roca natural bajo las islas: mismos parametros que la piedra.
     pub fn rock(texture: Texture) -> Self {
         Material { name: "Roca", bump: 0.09, ..Material::stone(texture) }
