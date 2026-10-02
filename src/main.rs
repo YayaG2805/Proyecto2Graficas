@@ -144,7 +144,8 @@ fn draw_help(d: &mut RaylibDrawHandle, render_ms: f32, auto_rotate: bool, previe
         "1-9: vistas   R: reiniciar".to_string(),
         format!("Espacio: giro automatico [{}]", on_off(auto_rotate)),
         format!("P: vista previa rapida [{}]", on_off(preview_enabled)),
-        "F12: captura   H: ocultar ayuda".to_string(),
+        "F11: pantalla completa   F12: captura".to_string(),
+        "H: ocultar ayuda".to_string(),
     ];
 
     let line_height = 20;
@@ -292,6 +293,10 @@ fn main() {
         if rl.is_key_pressed(KeyboardKey::KEY_H) {
             show_help = !show_help;
         }
+        // F11: pantalla completa (ventana sin bordes del tamano del monitor).
+        if rl.is_key_pressed(KeyboardKey::KEY_F11) {
+            rl.toggle_borderless_windowed();
+        }
 
         let start = std::time::Instant::now();
         let camera_moving = handle_camera_input(&rl, &mut camera, auto_rotate, dt);
@@ -327,12 +332,23 @@ fn main() {
             save_screenshot(&framebuffer, &format!("screenshots/captura_{}.png", screenshot_count));
         }
 
+        // La imagen se renderiza siempre a 800x600 (el costo no cambia) y se
+        // escala para llenar la ventana sin deformarse: el factor es el menor
+        // entre el ancho y el alto disponibles, y sobra una franja negra a los
+        // lados (o arriba y abajo) si la pantalla no es 4:3.
+        let fit = (rl.get_screen_width() as f32 / window_width as f32)
+            .min(rl.get_screen_height() as f32 / window_height as f32);
+        let offset = Vector2::new(
+            (rl.get_screen_width() as f32 - window_width as f32 * fit) * 0.5,
+            (rl.get_screen_height() as f32 - window_height as f32 * fit) * 0.5,
+        );
+
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(RColor::BLACK);
         if showing_preview {
-            d.draw_texture_ex(&preview_texture, Vector2::new(0.0, 0.0), 0.0, PREVIEW_SCALE as f32, RColor::WHITE);
+            d.draw_texture_ex(&preview_texture, offset, 0.0, PREVIEW_SCALE as f32 * fit, RColor::WHITE);
         } else {
-            d.draw_texture(&screen_texture, 0, 0, RColor::WHITE);
+            d.draw_texture_ex(&screen_texture, offset, 0.0, fit, RColor::WHITE);
         }
         if show_help {
             draw_help(&mut d, render_ms, auto_rotate, preview_enabled);
